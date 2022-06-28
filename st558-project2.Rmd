@@ -1,0 +1,73 @@
+---
+title: "Analysis of an Online News Popularity Data Set"
+author: "Claudia Donahue and Dane Korver"
+date: '2022-06-28'
+output: 
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction  
+
+You should have an introduction section that briefly describes the data and the variables you have to work with (just discuss the ones you want to use). Your target variables is the shares variable.
+
+You should also mention the purpose of your analysis and the methods you’ll use to model the response.
+
+You’ll describe those in more detail later.
+**This section should be done by the ‘second’ group member.**
+
+
+## Data  
+
+Use a relative path to import the data. Subset the data to work on the data channel of interest.
+**This section should be done by whoever can get to it first.**  
+
+
+
+## Summarizations  
+
+You should produce some basic (but meaningful) summary statistics and plots about the training data you are working with (especially as it relates to your response).  
+
+As you will automate this same analysis across other data, you can’t describe the trends you see in the graph (unless you want to try to automate that!). You should describe what to look for in the summary statistics/plots to help the reader understand the summary or graph.  
+
+**Each group member is responsible for producing some summary statistics (means, sds, contingency tables, etc.) and for producing at least three graphs (each) of the data.**  
+
+
+## Modeling  
+
+You’ll need to split the data into a training (70% of the data) and test set (30% of the data). Use set.seed() to make things reproducible.  
+
+The goal is to create models for predicting the number of shares in some way. Each group member should contribute a linear regression model and an ensemble tree-based model. As we are automating things, describing the chosen model is tough, so no need to worry about that.  
+
+**The first group member should fit a random forest model and the second group member should fit a boosted tree model.** Both models should be chosen using cross-validation.  
+
+Prior to the models fit using linear regression, **the first group member should provide a short but thorough explanation of the idea of a linear regression model.**  
+
+Prior to each ensemble model, you should provide a short but reasonably thorough explanation of the ensemble model you are using (so **one for each group member**).  
+
+
+
+## Comparison  
+
+All four of the models should be compared on the test set and a winner declared (this should be automated to be correct across all the created documents).  
+
+**This can be done by one group member and the automation done by the other.**  
+
+
+## Automation  
+
+Once you’ve completed the above for a particular data channel, adapt the code so that you can use a parameter in your build process. You should be able to automatically generate an analysis report for each data_channel_is_* variable - although again, you may want to create a new variable to help with the
+subsetting. You’ll end up with six total outputted documents.  
+
+**This should be done by the group member that doesn’t automate the comparison of models part.**  
+
+
+
+
+
+
