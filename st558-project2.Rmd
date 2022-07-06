@@ -21,33 +21,121 @@ You should also mention the purpose of your analysis and the methods you’ll us
 You’ll describe those in more detail later.
 **This section should be done by the ‘second’ group member.**
 
+The [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we are using summarizes a heterogeneous set of statistics about articles published by Mashable over a period of two years. The goal is to predict the number of shares in social networks (popularity).  
 
 ## Data  
 
 Use a relative path to import the data. Subset the data to work on the data channel of interest.
 **This section should be done by whoever can get to it first.**  
 
-This [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) summarizes a heterogeneous set of features about articles published by Mashable in a period of two years. The goal is to predict the number of shares in social networks (popularity).  
+We'll begin by reading in the data set.  
 
-```{r Read in data}
+```{r Read in data using a relative path}
 data <- readr::read_csv(file = "OnlineNewsPopularity.csv",
                         show_col_types = FALSE
                         )
 
+head(data)
 ```
+
+The data has just one column that is not numeric, and that column is the first one and contains URLs for the Mashable articles for each observation. The second column, `timedelta`, is not useful for prediction either. The other columns contain numeric data that we may be able to use to predict the number of shares. The last column is our target variable, `shares`. The data is set up nicely for what we want to do.  
+
+Next we will begin our look at one specific channel by subsetting the data.  
+
+```{r Subset channel of interest}
+channel <- "lifestyle" # starting with lifestyle for now
+
+channel <- paste("data_channel_is_", channel, sep = "")
+
+cData <- data[data[channel] == 1, ] # Extract rows of interest
+
+# I kind of want to drop the timedelta column, as well as the 
+# unused data_channel_is columns
+```
+
+We then split the data into training and testing sets (70% and 30%, respectively). We will only explore the training set, and will keep the testing set in reserve to determine the quality of our predictions. We will use the function `createDataPartition()` from the `caret` package to split the data. 
+
+```{r Split data into training and testing, message=FALSE}
+library(caret) # Using createDataPartition from caret
+
+set.seed(33) # for reproducibility 
+
+# Index to split on
+idx <- createDataPartition(y = data$shares, p = 0.7, list = FALSE)
+
+# Subset
+training <- cData[idx, ]
+testing <- cData[-idx, ]
+
+```
+
 
 ## Summarizations  
 
-You should produce some basic (but meaningful) summary statistics and plots about the training data you are working with (especially as it relates to your response).  
-
-As you will automate this same analysis across other data, you can’t describe the trends you see in the graph (unless you want to try to automate that!). You should describe what to look for in the summary statistics/plots to help the reader understand the summary or graph.  
-
 **Each group member is responsible for producing some summary statistics (means, sds, contingency tables, etc.) and for producing at least three graphs (each) of the data.**  
+
+Then we thought about the characteristics of an online article that might be associated with someone deciding to "share" the article to someone else. 
+
+We thought it was probably important to consider both the timing of the article, the headline, and the article's content. By timing, we mean that perhaps some readers are more likely to click on an article and share it on the weekend because they generally have more free time to read. We looked at numbers of shares on weekends vs. weekdays to see if that held true.   
+
+```{r summary by day of week, message=FALSE}
+library(tidyverse)
+
+training %>% group_by(is_weekend) %>%
+  summarise(avgShares = mean(shares),
+            medianShares = median(shares),
+            stdevShares = sd(shares)
+            )
+```
+The average and median calculations are measures of centrality, so that we can compare shares on weekends vs. on weekdays. The standard deviation of shares is a measure of the spread of the data, so that we can see if the average number of shares per article is more consistent on weekends or on weekdays. A higher standard deviation means the number of shares varies more from the average. 
+
+Then we wanted to create a visualization that would show us how the variable `title_sentiment_polarity` seemed to impact the number of shares. Our thought was that maybe an article with a more polarizing title would get more shares than one less polarizing, as people want to have some justification for urging a friend to spend time reading the article. A polarizing sentiment could provide that justification for some people. We will plot the polarity of the title's sentiment and include information on the number of words in the title.    
+
+```{r Scatter Plot title impact on shares, warning=FALSE}
+ggplot(training, aes(x = title_sentiment_polarity,
+                     y = shares,
+                     color = n_tokens_title)) +
+  geom_point() +
+  labs(title = "Title Sentiment vs Number of Shares",
+       x = "Sentiment Polarity of Title",
+       y = "Number of Shares",
+       color = "# Words in Title")
+```
+
+Then we wanted to look at the outliers--the top articles by shares, so we grabbed a list of those URLs, along with the number of shares. 
+
+```{r Top articles}
+head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
+```
+
+Finally, we thought about how the content of an article might lead someone to share it. Maybe people share shorter articles more than long ones. Maybe people like to share links with images more than links without images, we thought. So we took a look at an article's length and number of images vs. number of shares.  
+
+
+```{r Scatter plot of Article content length and images, warning=FALSE}
+ggplot(training, aes(x = n_tokens_content,
+                     y = shares,
+                     color = num_imgs)) +
+  geom_point() +
+  labs(title = "Article Length vs Number of Shares",
+       x = "Number of Words in Article",
+       y = "Number of Shares",
+       color = "# Images")
+
+```
+
+Within its metadata, a website can be assigned a number of keywords, which used to give search engines more information about the content. We wondered how the number of keywords related to the number of shares, given that this data is several years old, and that used to be considered a part of search engine optimization.  
+
+```{r Histogram of Keywords vs shares}
+ggplot(training, aes(x = num_keywords,
+                     y = shares)) +
+  geom_count() +
+  labs(title = "Number of Keywords vs. Shares",
+       x = "Number of Keywords",
+       y = "Number of Shares")
+```
 
 
 ## Modeling  
-
-You’ll need to split the data into a training (70% of the data) and test set (30% of the data). Use set.seed() to make things reproducible.  
 
 The goal is to create models for predicting the number of shares in some way. Each group member should contribute a linear regression model and an ensemble tree-based model. As we are automating things, describing the chosen model is tough, so no need to worry about that.  
 
@@ -56,6 +144,31 @@ The goal is to create models for predicting the number of shares in some way. Ea
 Prior to the models fit using linear regression, **the first group member should provide a short but thorough explanation of the idea of a linear regression model.**  
 
 Prior to each ensemble model, you should provide a short but reasonably thorough explanation of the ensemble model you are using (so **one for each group member**).  
+
+```{r Random Forest model, message = FALSE}
+# load required package
+library(randomForest)
+# set up the mtry parameter 
+tunegrid <- expand.grid(.mtry=c(1:15))
+
+#trainingRF <- na.omit(training)
+#train model
+rfFit <- train(x = trainingRF[,3:60], 
+                y = trainingRF$shares,
+                method = "rf",
+                tuneGrid = tunegrid,
+                preProcess = c("center", "scale"),
+                trControl = trainControl(method = "repeatedcv", 
+                                         number = 5, repeats = 3),
+               #na.action = na.omit
+                )
+rfFit
+
+# use the tree to make predictions based on testing data
+pred <- predict(rfFit, newdata = testing)
+# Make a confusion matrix
+confusionMatrix(pred, testing$shares)
+```
 
 
 
