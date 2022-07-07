@@ -28,17 +28,43 @@ The [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we
 Use a relative path to import the data. Subset the data to work on the data channel of interest.
 **This section should be done by whoever can get to it first.**  
 
-We'll begin by reading in the data set.  
+We'll begin by reading in the data set and looking at how it's structured.  
 
 ```{r Read in data using a relative path}
 data <- readr::read_csv(file = "OnlineNewsPopularity.csv",
                         show_col_types = FALSE
                         )
 
-head(data)
+str(data)
 ```
 
-The data has just one column that is not numeric, and that column is the first one and contains URLs for the Mashable articles for each observation. The second column, `timedelta`, is not useful for prediction either. The other columns contain numeric data that we may be able to use to predict the number of shares. The last column is our target variable, `shares`. The data is set up nicely for what we want to do.  
+The data has just one column that is not numeric, and that column is the first one and contains URLs for the Mashable articles for each observation. We will keep it, but won't use it in our models. The second column, `timedelta`, is not useful for prediction either. We will drop this one. The other columns contain numeric data that we may be able to use to predict the number of shares. The last column is our target variable, `shares`. The data is set up nicely for what we want to do.  
+
+```{r, drop and clean up columns}
+
+# Dropping the timedelta column
+library(tidyverse)
+data <- select(data, -timedelta)
+
+#Converting categorical values from numeric to factor - Weekdays
+data$weekday_is_monday <- factor(data$weekday_is_monday)
+data$weekday_is_tuesday <- factor(data$weekday_is_tuesday)
+data$weekday_is_wednesday <- factor(data$weekday_is_wednesday)
+data$weekday_is_thursday <- factor(data$weekday_is_thursday)
+data$weekday_is_friday <- factor(data$weekday_is_friday)
+data$weekday_is_saturday <- factor(data$weekday_is_saturday)
+data$weekday_is_sunday <- factor(data$weekday_is_sunday)
+
+#Converting categorical values from numeric to factor - News subjects
+data$data_channel_is_lifestyle <- factor(data$data_channel_is_lifestyle) 
+data$data_channel_is_entertainment <- factor(data$data_channel_is_entertainment)
+data$data_channel_is_bus <- factor(data$data_channel_is_bus)
+data$data_channel_is_socmed <- factor(data$data_channel_is_socmed)
+data$data_channel_is_tech <- factor(data$data_channel_is_tech)
+data$data_channel_is_world <- factor(data$data_channel_is_world)
+
+```
+
 
 Next we will begin our look at one specific channel by subsetting the data.  
 
@@ -48,10 +74,6 @@ channel <- "bus" # set = to channel when ready to automate
 channelNow <- paste("data_channel_is_", channel, sep = "")
 
 cData <- data[data[channelNow] == 1, ] # Extract rows of interest
-
-# Dropping the timedelta column
-library(tidyverse)
-cData <- select(cData, -timedelta)
 
 ```
 
