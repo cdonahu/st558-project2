@@ -182,11 +182,17 @@ where y is the dependent variable, x is an independent variable, and A and B are
 
 With that, here we go! We are using the `train()` function from the `caret` package to make the model. We will use the results of 5-fold cross-validation to evaluate the performance of all our models and, later, to compare them.
 
-This first multiple regression (linear regression model extended to include more explanatory variables and/or higher order terms) will try to predict the number of shares based on all the available data in our training dataset.  
+This first multiple regression (linear regression model extended to include more explanatory variables and/or higher order terms) will try to predict the number of shares based on most of the available data in our training dataset.  
 
 ```{r multiple regression full fit, warning=FALSE}
 # building the model
-fullFit <- train(shares ~ ., 
+fullFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
+                     average_token_length + num_keywords + 
+                     kw_min_max + kw_max_max + kw_avg_max + kw_max_avg +
+                     kw_avg_avg + self_reference_min_shares + weekday_is_monday +
+                     weekday_is_tuesday + weekday_is_wednesday + 
+                     weekday_is_thursday + weekday_is_friday +
+                     global_subjectivity + title_sentiment_polarity, 
               data = training, 
               method = "lm", # linear regression
               preProcess = c("center", "scale", "nzv"),
@@ -197,15 +203,13 @@ fullFit$finalModel
 fullFit
 ```
 
-The next multiple regresson model includes a subset of variables that we think would be important. 
+The next multiple regresson model includes a smaller subset of variables that we think would be important. 
 
 ```{r multiple regression w/selected variables, warning=FALSE}
-selectFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
+smallFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
                      average_token_length + num_keywords + 
                      kw_min_max + kw_max_max + kw_avg_max + kw_max_avg +
-                     kw_avg_avg + self_reference_min_shares + weekday_is_monday +
-                     weekday_is_tuesday + weekday_is_wednesday + 
-                     weekday_is_thursday + weekday_is_friday +
+                     kw_avg_avg + self_reference_min_shares +
                      global_subjectivity + title_sentiment_polarity,
               data = training, 
               method = "lm", 
@@ -213,8 +217,8 @@ selectFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
               trControl = trainControl(method = "cv", number = 5)
               )
 # look at the resulting coefficients
-selectFit$finalModel
-selectFit
+smallFit$finalModel
+smallFit
 ```
 
 
@@ -226,28 +230,24 @@ Random forest is a tree-based method of prediction. It does not use all predicto
 # load required package
 library(randomForest)
 # set up the mtry parameter 
-tunegrid <- expand.grid(.mtry=c(1:20))
+tunegrid <- expand.grid(.mtry=c(1:15))
 
-# Get rid of NA/missing values so train() will work
-#trainRF <- na.omit(training)
 #train model
 rfFit <- train(x = select(training, -url, -shares), 
                 y = training$shares,
                 method = "rf",
-                #na.action = na.omit, # not sure this is acceptable 
                 tuneGrid = tunegrid,
                 preProcess = c("center", "scale", "nzv"),
-                trControl = trainControl(method = "repeatedcv", 
-                                         number = 5, repeats = 3),
+                trControl = trainControl(method = "cv", 
+                                         number = 5)
                 )
 rfFit
-
 
 ```
 
 ### Boosted Tree  
 
-```{r boosted tree model, message=FALSE}
+```{r boosted tree model, message=FALSE, warning=FALSE}
 # Load required packages
 library(gbm)
 library(plyr)
@@ -259,20 +259,15 @@ gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3),
                         n.minobsinnode = 10)
 
 #train model
-btFit <- train(x = training, 
+btFit <- train(x = select(training, -url, -shares), 
                 y = training$shares,
                 method = "gbm",
                 tuneGrid = gbmGrid,
                 preProcess = c("center", "scale", "nzv"),
-                trControl = trainControl(method = "repeatedcv", 
-                                         number = 5, repeats = 3)
+                trControl = trainControl(method = "cv", 
+                                         number = 5)
                 )
-# Plot the parameters and accuracy levels
-trellis.par.set(caretTheme())
-plot(btFit) 
 
-# use the tree to make predictions based on testing data
-pred <- predict(btFit, newdata = testing)
 ```
 
 
@@ -286,7 +281,7 @@ Test each model on our test set of data.
 # full fit multiple regression model
 fullPred <- predict(fullFit, newdata = testing)
 # selected variable multiple regression model
-selPred <- predict(selectFit, newdata = testing)
+smallPred <- predict(selectFit, newdata = testing)
 # random forest
 rfPred <- predict(rfFit, newdata = testing)
 # boosted tree
@@ -297,14 +292,17 @@ btPred <- predict(btFit, newdata = testing)
 Now we will compare the four candidate models and choose one.  
 
 ```{r compare models and choose}
-# Display a table with results
-data.frame(t(fullFit$results), 
-           t(selectFit$results),
-           t(rfFit$results),
-           t(btFit$results))
+# Create a named with results (Rsquared values) for each model
+results <- c("Full Fit" = max(fullFit$results$Rsquared), 
+           "Small Fit" = max(selectFit$results$Rsquared),
+           "Random Forest" = max(rfFit$results$Rsquared),
+           "Boosted Tree" = max(btFit$results$Rsquared))
 
-# Select a model based on the lowest RMSE or highest R-squared value & display
+# RSquared Values are: 
+results
 
+# The best model based on the highest R-squared value is:
+results[which.max(results)]
 ``` 
 
 
