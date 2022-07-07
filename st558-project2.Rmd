@@ -34,8 +34,11 @@ We'll begin by reading in the data set and looking at how it's structured.
 data <- readr::read_csv(file = "OnlineNewsPopularity.csv",
                         show_col_types = FALSE
                         )
-
+# Look at structure of data set
 str(data)
+
+# Checking to see whether the data has missing values
+sum(is.na(data))
 ```
 
 The data has just one column that is not numeric, and that column is the first one and contains URLs for the Mashable articles for each observation. We will keep it, but won't use it in our models. The second column, `timedelta`, is not useful for prediction either. We will drop this one. The other columns contain numeric data that we may be able to use to predict the number of shares. The last column is our target variable, `shares`. The data is set up nicely for what we want to do.  
@@ -85,7 +88,7 @@ library(caret) # Using createDataPartition from caret
 set.seed(33) # for reproducibility 
 
 # Index to split on
-idx <- createDataPartition(y = data$shares, p = 0.7, list = FALSE)
+idx <- createDataPartition(y = cData$shares, p = 0.7, list = FALSE)
 
 # Subset
 training <- cData[idx, ]
@@ -106,7 +109,10 @@ training %>% group_by(is_weekend) %>%
             medianShares = median(shares),
             stdevShares = sd(shares)
             )
+
 ```
+
+
 The average and median calculations are measures of centrality, so that we can compare shares on weekends vs. on weekdays. The standard deviation of shares is a measure of the spread of the data, so that we can see if the average number of shares per article is more consistent on weekends or on weekdays. A higher standard deviation means the number of shares varies more from the average. 
 
 Then we wanted to create a visualization that would show us how the variable `title_sentiment_polarity` seemed to impact the number of shares. Our thought was that maybe an article with a more polarizing title would get more shares than one less polarizing, as people want to have some justification for urging a friend to spend time reading the article. A polarizing sentiment could provide that justification for some people. We will plot the polarity of the title's sentiment and include information on the number of words in the title.    
@@ -176,24 +182,41 @@ where y is the dependent variable, x is an independent variable, and A and B are
 
 With that, here we go! We are using the `train()` function from the `caret` package to make the model. We will use the results of 5-fold cross-validation to evaluate the performance of all our models and, later, to compare them.
 
-This first multiple regression (linear regression model extended to include more explanatory variables and/or higher order terms) will try to predict the number of shares based on the number of keywords, the number of words in the article, and the average word length.  
+This first multiple regression (linear regression model extended to include more explanatory variables and/or higher order terms) will try to predict the number of shares based on all the available data in our training dataset.  
 
-```{r Linear regression}
+```{r multiple regression full fit, warning=FALSE}
 # building the model
-fit1 <- train(shares ~ num_keywords + n_tokens_content + average_token_length, 
+fullFit <- train(shares ~ ., 
               data = training, 
               method = "lm", # linear regression
-              na.action = na.omit,
-              preProcess = c("center", "scale"),
+              preProcess = c("center", "scale", "nzv"),
               trControl = trainControl(method = "cv", number = 5)
               )
 # look at the resulting coefficients
-fit1$finalModel
-fit1
+fullFit$finalModel
+fullFit
 ```
 
+The next multiple regresson model includes a subset of variables that we think would be important. 
 
-Prior to each ensemble model, you should provide a short but reasonably thorough explanation of the ensemble model you are using (so **one for each group member**).  
+```{r multiple regression w/selected variables, warning=FALSE}
+selectFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
+                     average_token_length + num_keywords + 
+                     kw_min_max + kw_max_max + kw_avg_max + kw_max_avg +
+                     kw_avg_avg + self_reference_min_shares + weekday_is_monday +
+                     weekday_is_tuesday + weekday_is_wednesday + 
+                     weekday_is_thursday + weekday_is_friday +
+                     global_subjectivity + title_sentiment_polarity,
+              data = training, 
+              method = "lm", 
+              preProcess = c("center", "scale", "nzv"),
+              trControl = trainControl(method = "cv", number = 5)
+              )
+# look at the resulting coefficients
+selectFit$finalModel
+selectFit
+```
+
 
 ### Random Forest  
 
@@ -206,10 +229,10 @@ library(randomForest)
 tunegrid <- expand.grid(.mtry=c(1:20))
 
 # Get rid of NA/missing values so train() will work
-trainRF <- na.omit(training)
+#trainRF <- na.omit(training)
 #train model
-rfFit <- train(x = select(trainRF, -url, -shares), 
-                y = trainRF$shares,
+rfFit <- train(x = select(training, -url, -shares), 
+                y = training$shares,
                 method = "rf",
                 #na.action = na.omit, # not sure this is acceptable 
                 tuneGrid = tunegrid,
@@ -219,24 +242,64 @@ rfFit <- train(x = select(trainRF, -url, -shares),
                 )
 rfFit
 
-# use the tree to make predictions based on testing data
-pred <- predict(rfFit, newdata = testing)
-# Make a confusion matrix
-confusionMatrix(pred, testing$shares)
+
 ```
 
+### Boosted Tree  
+
+```{r boosted tree model, message=FALSE}
+# Load required packages
+library(gbm)
+library(plyr)
+
+# set up the parameters
+gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3), 
+                        n.trees = c(25, 50, 100, 150), 
+                        shrinkage = 0.1,
+                        n.minobsinnode = 10)
+
+#train model
+btFit <- train(x = training, 
+                y = training$shares,
+                method = "gbm",
+                tuneGrid = gbmGrid,
+                preProcess = c("center", "scale", "nzv"),
+                trControl = trainControl(method = "repeatedcv", 
+                                         number = 5, repeats = 3)
+                )
+# Plot the parameters and accuracy levels
+trellis.par.set(caretTheme())
+plot(btFit) 
+
+# use the tree to make predictions based on testing data
+pred <- predict(btFit, newdata = testing)
+```
 
 
 ## Comparison  
 
 All four of the models should be compared on the test set and a winner declared (this should be automated to be correct across all the created documents).  
 
+Test each model on our test set of data. 
+
+```{r test set}
+# full fit multiple regression model
+fullPred <- predict(fullFit, newdata = testing)
+# selected variable multiple regression model
+selPred <- predict(selectFit, newdata = testing)
+# random forest
+rfPred <- predict(rfFit, newdata = testing)
+# boosted tree
+btPred <- predict(btFit, newdata = testing)
+```
+
+
 Now we will compare the four candidate models and choose one.  
 
 ```{r compare models and choose}
 # Display a table with results
-data.frame(t(fit1$results), 
-           t(fit2$results),
+data.frame(t(fullFit$results), 
+           t(selectFit$results),
            t(rfFit$results),
            t(btFit$results))
 

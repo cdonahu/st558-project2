@@ -8,7 +8,8 @@ R packages used:
 - readr  
 - GGally  
 - randomForest  
-- 
+- gbm  
+- plyr  
 
 Links to the generated analyses: 
 
