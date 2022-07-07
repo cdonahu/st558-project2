@@ -42,15 +42,19 @@ The data has just one column that is not numeric, and that column is the first o
 
 Next we will begin our look at one specific channel by subsetting the data.  
 
-```{r Subset channel of interest}
-channel <- "lifestyle" # starting with lifestyle for now
+```{r Subset channel of interest, message=FALSE}
+channel <- "bus" # hoping this will use the variable from README render code
 
-channel <- paste("data_channel_is_", channel, sep = "")
+channelNow <- paste("data_channel_is_", channel, sep = "")
 
-cData <- data[data[channel] == 1, ] # Extract rows of interest
+cData <- data[data[channelNow] == 1, ] # Extract rows of interest
 
-# I kind of want to drop the timedelta column, as well as the 
-# unused data_channel_is columns
+# Dropping the timedelta column
+library(tidyverse)
+cData <- select(cData, -timedelta)
+
+# Drop the unused data_channel_is columns?? Not sure how
+
 ```
 
 We then split the data into training and testing sets (70% and 30%, respectively). We will only explore the training set, and will keep the testing set in reserve to determine the quality of our predictions. We will use the function `createDataPartition()` from the `caret` package to split the data. 
@@ -72,15 +76,11 @@ testing <- cData[-idx, ]
 
 ## Summarizations  
 
-**Each group member is responsible for producing some summary statistics (means, sds, contingency tables, etc.) and for producing at least three graphs (each) of the data.**  
-
 Then we thought about the characteristics of an online article that might be associated with someone deciding to "share" the article to someone else. 
 
 We thought it was probably important to consider both the timing of the article, the headline, and the article's content. By timing, we mean that perhaps some readers are more likely to click on an article and share it on the weekend because they generally have more free time to read. We looked at numbers of shares on weekends vs. weekdays to see if that held true.   
 
 ```{r summary by day of week, message=FALSE}
-library(tidyverse)
-
 training %>% group_by(is_weekend) %>%
   summarise(avgShares = mean(shares),
             medianShares = median(shares),
@@ -147,12 +147,6 @@ Looking across the bottom row of graphs, we can see whether any relationships be
 
 ## Modeling  
 
-The goal is to create models for predicting the number of shares in some way. Each group member should contribute a linear regression model and an ensemble tree-based model. As we are automating things, describing the chosen model is tough, so no need to worry about that.  
-
-**The first group member should fit a random forest model and the second group member should fit a boosted tree model.** Both models should be chosen using cross-validation.  
-
-Prior to the models fit using linear regression, **the first group member should provide a short but thorough explanation of the idea of a linear regression model.**  
-
 ### Linear Regression  
 Linear regression is a way of calculating the relationship between one or more input/independent variables and an output/dependent variable. (More than one input variable would make the model a multiple regression) In this case, our output variables is `shares`, the number of times a Mashable article was shared. A linear regression assumes that one or more other variables are correlated with the number of shares, and that the relationship can be visually represented as a straight line. The mathematical equation for a basic linear regression is: 
 
@@ -162,7 +156,7 @@ where y is the dependent variable, x is an independent variable, and A and B are
 
 With that, here we go! We are using the `train()` function from the `caret` package to make the model. We will use the results of 5-fold cross-validation to evaluate the performance of all our models and, later, to compare them.
 
-This first multiple regression will try to predict the number of shares based on the number of keywords, the number of words in the article, and the average word length.  
+This first multiple regression (linear regression model extended to include more explanatory variables and/or higher order terms) will try to predict the number of shares based on the number of keywords, the number of words in the article, and the average word length.  
 
 ```{r Linear regression}
 # building the model
@@ -181,20 +175,25 @@ fit1
 
 Prior to each ensemble model, you should provide a short but reasonably thorough explanation of the ensemble model you are using (so **one for each group member**).  
 
-```{r Random Forest model, message = FALSE}
+### Random Forest  
+
+Random forest is a tree-based method of prediction. It does not use all predictors available, but instead uses a random subset of predictors for each of many bootstrap samples / tree fits.  
+
+```{r Random Forest model, message = FALSE, warning = FALSE}
 # load required package
 library(randomForest)
 # set up the mtry parameter 
-tunegrid <- expand.grid(.mtry=c(1:15))
+tunegrid <- expand.grid(.mtry=c(1:20))
 
-#trainingRF <- na.omit(training)
+# Get rid of NA/missing values so train() will work
+trainRF <- na.omit(training)
 #train model
-rfFit <- train(x = trainingRF[,3:60], 
-                y = trainingRF$shares,
+rfFit <- train(x = select(trainRF, -url, -shares), 
+                y = trainRF$shares,
                 method = "rf",
-               na.action = na.omit,
+                #na.action = na.omit, # not sure this is acceptable 
                 tuneGrid = tunegrid,
-                preProcess = c("center", "scale"),
+                preProcess = c("center", "scale", "nzv"),
                 trControl = trainControl(method = "repeatedcv", 
                                          number = 5, repeats = 3),
                 )
@@ -212,15 +211,20 @@ confusionMatrix(pred, testing$shares)
 
 All four of the models should be compared on the test set and a winner declared (this should be automated to be correct across all the created documents).  
 
-**This can be done by one group member and the automation done by the other.**  
+Now we will compare the four candidate models and choose one.  
+
+```{r compare models and choose}
+# Display a table with results
+data.frame(t(fit1$results), 
+           t(fit2$results),
+           t(rfFit$results),
+           t(btFit$results))
+
+# Select a model based on the lowest RMSE or highest R-squared value & display
+
+``` 
 
 
-## Automation  
-
-Once you’ve completed the above for a particular data channel, adapt the code so that you can use a parameter in your build process. You should be able to automatically generate an analysis report for each data_channel_is_* variable - although again, you may want to create a new variable to help with the
-subsetting. You’ll end up with six total outputted documents.  
-
-**This should be done by the group member that doesn’t automate the comparison of models part.**  
 
 
 
