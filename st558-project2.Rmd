@@ -134,6 +134,16 @@ ggplot(training, aes(x = num_keywords,
        y = "Number of Shares")
 ```
 
+Before the modeling step, we took one final look at some of the other variables we thought might be important in predicting number of shares, based on the summaries above and our own experiences. 
+
+```{r exploratory graph}
+library(GGally)
+training %>% 
+  select(self_reference_avg_sharess, LDA_00, rate_negative_words, shares) %>%
+  GGally::ggpairs()
+```
+
+Looking across the bottom row of graphs, we can see whether any relationships between `shares` and another variable are evident. 
 
 ## Modeling  
 
@@ -142,6 +152,32 @@ The goal is to create models for predicting the number of shares in some way. Ea
 **The first group member should fit a random forest model and the second group member should fit a boosted tree model.** Both models should be chosen using cross-validation.  
 
 Prior to the models fit using linear regression, **the first group member should provide a short but thorough explanation of the idea of a linear regression model.**  
+
+### Linear Regression  
+Linear regression is a way of calculating the relationship between one or more input/independent variables and an output/dependent variable. (More than one input variable would make the model a multiple regression) In this case, our output variables is `shares`, the number of times a Mashable article was shared. A linear regression assumes that one or more other variables are correlated with the number of shares, and that the relationship can be visually represented as a straight line. The mathematical equation for a basic linear regression is: 
+
+$y = B*x+A$
+
+where y is the dependent variable, x is an independent variable, and A and B are coefficients for the line's y-intercept and slope. The values for these coefficients are chosen to minimize the error between the model's predictions and the actual outcomes in the training data. 
+
+With that, here we go! We are using the `train()` function from the `caret` package to make the model. We will use the results of 5-fold cross-validation to evaluate the performance of all our models and, later, to compare them.
+
+This first multiple regression will try to predict the number of shares based on the number of keywords, the number of words in the article, and the average word length.  
+
+```{r Linear regression}
+# building the model
+fit1 <- train(shares ~ num_keywords + n_tokens_content + average_token_length, 
+              data = training, 
+              method = "lm", # linear regression
+              na.action = na.omit,
+              preProcess = c("center", "scale"),
+              trControl = trainControl(method = "cv", number = 5)
+              )
+# look at the resulting coefficients
+fit1$finalModel
+fit1
+```
+
 
 Prior to each ensemble model, you should provide a short but reasonably thorough explanation of the ensemble model you are using (so **one for each group member**).  
 
@@ -156,11 +192,11 @@ tunegrid <- expand.grid(.mtry=c(1:15))
 rfFit <- train(x = trainingRF[,3:60], 
                 y = trainingRF$shares,
                 method = "rf",
+               na.action = na.omit,
                 tuneGrid = tunegrid,
                 preProcess = c("center", "scale"),
                 trControl = trainControl(method = "repeatedcv", 
                                          number = 5, repeats = 3),
-               #na.action = na.omit
                 )
 rfFit
 
