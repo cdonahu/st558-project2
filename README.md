@@ -5,15 +5,19 @@ The purpose of this project is to automate the creation of documents using R Mar
 R packages used:  
 - tidyverse  
 - caret  
+- readr  
+- GGally  
+- randomForest  
+- 
 
 Links to the generated analyses: 
 
-- [Lifestyle]()  
-- [Entertainment]()  
-- [Business]()  
-- [Social Media]()  
-- [Tech]()  
-- [World]()  
+- [Lifestyle](lifestyle.html)  
+- [Entertainment](entertainment.html)  
+- [Business](bus.html)  
+- [Social Media](socmed.html)  
+- [Tech](tech.html)  
+- [World](world.html)  
 
 Code used to render the analyses from a single .Rmd file: 
 ```
