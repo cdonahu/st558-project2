@@ -43,7 +43,7 @@ The data has just one column that is not numeric, and that column is the first o
 Next we will begin our look at one specific channel by subsetting the data.  
 
 ```{r Subset channel of interest, message=FALSE}
-channel <- "bus" # hoping this will use the variable from README render code
+channel <- "bus" # set = to channel when ready to automate
 
 channelNow <- paste("data_channel_is_", channel, sep = "")
 
@@ -52,8 +52,6 @@ cData <- data[data[channelNow] == 1, ] # Extract rows of interest
 # Dropping the timedelta column
 library(tidyverse)
 cData <- select(cData, -timedelta)
-
-# Drop the unused data_channel_is columns?? Not sure how
 
 ```
 
@@ -179,7 +177,7 @@ Prior to each ensemble model, you should provide a short but reasonably thorough
 
 Random forest is a tree-based method of prediction. It does not use all predictors available, but instead uses a random subset of predictors for each of many bootstrap samples / tree fits.  
 
-```{r Random Forest model, message = FALSE, warning = FALSE, eval=FALSE}
+```{r Random Forest model, message = FALSE, warning = FALSE}
 # load required package
 library(randomForest)
 # set up the mtry parameter 
@@ -213,7 +211,7 @@ All four of the models should be compared on the test set and a winner declared 
 
 Now we will compare the four candidate models and choose one.  
 
-```{r compare models and choose, eval=FALSE}
+```{r compare models and choose}
 # Display a table with results
 data.frame(t(fit1$results), 
            t(fit2$results),
