@@ -95,7 +95,7 @@ cData <- data[data[channelNow] == 1, ] # Extract rows of interest
 
 ```
 
-We then split the data into training and testing sets (70% and 30%, respectively). We will only explore the training set, and will keep the testing set in reserve to determine the quality of our predictions. We will use the function `createDataPartition()` from the `caret` package to split the data. 
+We then split the `r channel` channel's data into training and testing sets (70% and 30%, respectively). We will only explore the training set, and will keep the testing set in reserve to determine the quality of our predictions. We will use the function `createDataPartition()` from the `caret` package to split the data. 
 
 ```{r Split data into training and testing, message=FALSE}
 library(caret) # Using createDataPartition from caret
@@ -127,7 +127,7 @@ ggplot(data) +
        fill = "Channel")
 ```
 
-So we did away with that theory, and we will instead look at just one channel's number of shares across days of the week. 
+So we did away with that theory, and we will instead look at just the `r channel` channel's number of shares across days of the week. 
 
 ```{r boxplot of shares by day of week}
 ggplot(training, aes(x = day, y = shares)) +
@@ -137,9 +137,9 @@ ggplot(training, aes(x = day, y = shares)) +
 ```
 
 
-The boxplot shows the distribution of the number of shares by the day of the week. It can be a good way to see if we have any outliers with **way** more shares than a typical article.  
+The boxplot shows the distribution of the number of shares by the day of the week. It can be a good way to see if we have any outliers with **way** more shares than a typical article in this channel.  
 
-Then we wanted to look at these outliers--the top articles by shares, so we grabbed a list of those URLs, along with the number of shares. 
+We wanted to look at these outliers--the `r channel` channel's top articles by shares, so we grabbed a list of those URLs, along with the number of shares. 
 
 ```{r Top articles}
 head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
@@ -203,6 +203,8 @@ training %>%
 Looking across the bottom row of graphs, we can see whether any relationships between `shares` and another variable are evident. 
 
 ## Modeling  
+
+Now we were ready to create some predictive models using the training data.  
 
 ### Linear Regression  
 Linear regression is a way of calculating the relationship between one or more input/independent variables and an output/dependent variable. (More than one input variable would make the model a multiple regression) In this case, our output variables is `shares`, the number of times a Mashable article was shared. A linear regression assumes that one or more other variables are correlated with the number of shares, and that the relationship can be visually represented as a straight line. The mathematical equation for a basic linear regression is: 
@@ -334,13 +336,13 @@ winner <- results[which.max(results)]
 winner
 ``` 
 
-We have a winning model based on the highest R-Squared value of `r winner`! Our models are not doing that great, and only explain a small percentage of the variation in number of shares, but let's not let that dampen our enthusiasm!   
+Above is our winning model for the `r channel` channel based on it having the highest R-Squared value of `r winner`! Our models are not doing that great, and only explain a small percentage of the variation in number of shares, but let's not let that dampen our enthusiasm!   
 
 If we wanted to improve upon these models, we could increase the tuning value of `mtry` in the Random Forest model. The cost would be the model would take a lot longer to train. We also considered trying to predict the  $log(`shares`)$  instead of `shares` itself, but decided that was outside the scope of the assignment. 
 
 ## Automation  
 
-We generated these reports automatically for each channel ("lifestyle", "entertainment", "bus", "socmed", "tech", and "world") by creating a function that uses the `rmarkdown` package to render a Github document with a `params` option, and then using a for loop to execute that function for each channel in a list. That's how the page you're reading was generated!  
+We generated these reports automatically for each channel ("lifestyle", "entertainment", "bus", "socmed", "tech", and "world") by creating a function that uses the `rmarkdown` package to render a Github document with a `params` option, and then using a for loop to execute that function for each channel in a list. That's how the `r channel` channel page you're reading was generated!  
 
 The code we used to automate the rendering is visible at the main page for this project [here](https://cdonahu.github.io/st558-project2/). 
 
