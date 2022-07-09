@@ -288,7 +288,7 @@ ggplot(training, aes(x = title_sentiment_polarity,
        color = "# Words in Title")
 ```
 
-![](./images/Scatter%20Plot%20title%20impact%20on%20shares-1.png)<!-- -->
+![](./world_images/Scatter%20Plot%20title%20impact%20on%20shares-1.png)<!-- -->
 
 Then we wanted to look at the outliers–the top articles by shares, so we
 grabbed a list of those URLs, along with the number of shares.
@@ -328,7 +328,7 @@ ggplot(training, aes(x = n_tokens_content,
        color = "# Images")
 ```
 
-![](./images/Scatter%20plot%20of%20Article%20content%20length%20and%20images-1.png)<!-- -->
+![](./world_images/Scatter%20plot%20of%20Article%20content%20length%20and%20images-1.png)<!-- -->
 
 Within its metadata, a website can be assigned a number of keywords,
 which used to give search engines more information about the content. We
@@ -345,7 +345,7 @@ ggplot(training, aes(x = num_keywords,
        y = "Number of Shares")
 ```
 
-![](./images/Histogram%20of%20Keywords%20vs%20shares-1.png)<!-- -->
+![](./world_images/Histogram%20of%20Keywords%20vs%20shares-1.png)<!-- -->
 
 Before the modeling step, we took one final look at some of the other
 variables we thought might be important in predicting number of shares,
@@ -365,8 +365,8 @@ training %>%
     ## plot: [2,1] [================>-------------------------------------] 31% est: 1s
     ## plot: [2,2] [===================>----------------------------------] 38% est: 1s
     ## plot: [2,3] [=======================>------------------------------] 44% est: 1s
-    ## plot: [2,4] [==========================>---------------------------] 50% est: 0s
-    ## plot: [3,1] [=============================>------------------------] 56% est: 0s
+    ## plot: [2,4] [==========================>---------------------------] 50% est: 1s
+    ## plot: [3,1] [=============================>------------------------] 56% est: 1s
     ## plot: [3,2] [=================================>--------------------] 62% est: 0s
     ## plot: [3,3] [====================================>-----------------] 69% est: 0s
     ## plot: [3,4] [=======================================>--------------] 75% est: 0s
@@ -375,7 +375,7 @@ training %>%
     ## plot: [4,3] [==================================================>---] 94% est: 0s
     ## plot: [4,4] [======================================================]100% est: 0s
 
-![](./images/exploratory%20graph-1.png)<!-- -->
+![](./world_images/exploratory%20graph-1.png)<!-- -->
 
 Looking across the bottom row of graphs, we can see whether any
 relationships between `shares` and another variable are evident.
