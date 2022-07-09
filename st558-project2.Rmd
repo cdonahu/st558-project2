@@ -10,7 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(fig.path = "./images/")
+knitr::opts_chunk$set(fig.path = paste("./", channel, "_images/", sep = ""))
 ```
 
 ## Introduction  
@@ -297,7 +297,9 @@ results[which.max(results)]
 
 ## Automation  
 
-We generated these reports automatically for each channel ("lifestyle", "entertainment", "bus", "socmed", "tech", and "world") by creating a function that uses the `rmarkdown` package to render a Github document, and then using a for loop to execute that function for each channel in a list. That's how the page you're reading was generated!  
+We generated these reports automatically for each channel ("lifestyle", "entertainment", "bus", "socmed", "tech", and "world") by creating a function that uses the `rmarkdown` package to render a Github document with a `params` option, and then using a for loop to execute that function for each channel in a list. That's how the page you're reading was generated!  
+
+The code we used to automate the rendering is visible at the main page for this project [here](https://cdonahu.github.io/st558-project2/). 
 
 
 
