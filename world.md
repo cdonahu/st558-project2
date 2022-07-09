@@ -1,4 +1,4 @@
-Analysis of an Online News Popularity Data Set
+Predicting Popularity of Articles in the world Channel
 ================
 Claudia Donahue and Dane Korver
 2022-06-28
@@ -16,15 +16,15 @@ For this project, the
 [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity)
 we are using summarizes a heterogeneous set of statistics about articles
 published by Mashable over a period of two years. The goal is to predict
-the number of shares in social networks (popularity). We wanted to look
-at the patterns in the articles that were shared. For example, is the
-timing of the article, the headline, and the article’s content all
-relevent in determining the number of times the article gets shared.
-What about whether an article had a polarizing title versus a generic
-non-polarizing title. Then, we wanted to find out whether the number of
-keywords associated with an article impacted the number of shares it
-received. Here are our findings for studying how to predict the number
-of shares in social networks (popularity).
+an article’s number of shares to social networks (its popularity). We
+wanted to look at the patterns in the articles that were shared. For
+example, is the timing of the article, the headline, and the article’s
+content all relevant in determining the number of times the article gets
+shared? What about whether an article had a polarizing title versus a
+generic non-polarizing title. Then, we wanted to find out whether the
+number of keywords associated with an article impacted the number of
+shares it received. Here are our findings for studying how to predict
+the number of shares in social networks (popularity).
 
 ## Data
 
@@ -230,8 +230,8 @@ data$data_channel_is_tech <- factor(data$data_channel_is_tech)
 data$data_channel_is_world <- factor(data$data_channel_is_world)
 ```
 
-Next we will begin our look at one specific channel by subsetting the
-data.
+Next we will begin our look at one specific channel (world) by
+subsetting the data.
 
 ``` r
 channel <- channel # set = to channel when ready to automate
@@ -271,7 +271,8 @@ article, the headline, and the article’s content. By timing, we mean
 that perhaps some readers are more likely to click on an article and
 share it on the weekend because they generally have more free time to
 read. But then we plotted the number of articles published each day, and
-realized not much gets published on the weekend.
+realized not much gets published on the weekend, compared to weekdays.
+To visualize this pattern, we created the chart below:
 
 ``` r
 ggplot(data) + 
@@ -321,6 +322,10 @@ head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10
     ##  9 http://mashable.com/2014/09/22/a-rogues-gallery-7-people/                   62000
     ## 10 http://mashable.com/2014/09/11/apple-u2-album-download/                     59400
 
+You can check out the article’s date and title within the URL and see
+what some of the most-shared articles were in the world channel during
+the time period studied.
+
 Then we wanted to create a visualization that would show us how the
 variable `title_sentiment_polarity` seemed to impact the number of
 shares. Our thought was that maybe an article with a more polarizing
@@ -343,6 +348,11 @@ ggplot(training, aes(x = title_sentiment_polarity,
 
 ![](./world_images/Scatter%20Plot%20title%20impact%20on%20shares-1.png)<!-- -->
 
+In this plot of the impact of the title’s sentiment polarity on shares,
+an upward trend in the plotted points would indicate that articles with
+higher values of title sentiment polarity tend to be shared more often.
+Note that polarity values can be positive or negative.
+
 Finally, we thought about how the content of an article might lead
 someone to share it. Maybe people share shorter articles more than long
 ones. Maybe people like to share links with images more than links
@@ -362,11 +372,16 @@ ggplot(training, aes(x = n_tokens_content,
 
 ![](./world_images/Scatter%20plot%20of%20Article%20content%20length%20and%20images-1.png)<!-- -->
 
-Within its metadata, a website can be assigned a number of keywords,
-which used to give search engines more information about the content. We
-wondered how the number of keywords related to the number of shares,
-given that this data is several years old, and that used to be
-considered a part of search engine optimization.
+In this plot, a downward trend in plotted points would indicate that
+shorter articles generally get more shares, while an upward trend would
+indicate that longer articles achieve more shares.
+
+Next we looked at an article’s keyword characteristics. Within its
+metadata, a website can be assigned a number of keywords, which used to
+give search engines more information about the content. We wondered how
+the number of keywords related to the number of shares, given that this
+data is several years old, and that used to be considered a part of
+search engine optimization.
 
 ``` r
 ggplot(training, aes(x = num_keywords,
@@ -379,9 +394,14 @@ ggplot(training, aes(x = num_keywords,
 
 ![](./world_images/Histogram%20of%20Keywords%20vs%20shares-1.png)<!-- -->
 
-Before the modeling step, we took one final look at some of the other
-variables we thought might be important in predicting number of shares,
-based on the summaries above and our own experiences.
+The plot depicts circles sized by the number of articles falling into
+that category of number of keywords and number of shares. So you can how
+many keywords are typically used, and also whether any specific number
+of keywords tends to achieve more shares.
+
+Before the modeling step, we took one final look at a few more of the
+other variables we thought might be important in predicting number of
+shares, based on the summaries above and our own experiences.
 
 ``` r
 library(GGally)
@@ -736,9 +756,13 @@ results
 ``` r
 # The best model based on the highest R-squared value is:
 winner <- results[which.max(results)]
+winner
 ```
 
-We have a winning model based on the highest R-Squared value, and it’s
+    ## Random Forest 
+    ##    0.02472315
+
+We have a winning model based on the highest R-Squared value of
 0.0247232! Our models are not doing that great, and only explain a small
 percentage of the variation in number of shares, but let’s not let that
 dampen our enthusiasm!
