@@ -1,5 +1,5 @@
 ---
-title: "Analysis of an Online News Popularity Data Set"
+title: "Predicting Popularity of Articles in the `r channel` Channel"
 author: "Claudia Donahue and Dane Korver"
 date: '2022-06-28'
 output: 
@@ -13,9 +13,9 @@ knitr::opts_chunk$set(echo = TRUE)
 knitr::opts_chunk$set(fig.path = paste("./", channel, "_images/", sep = ""))
 ```
 
-## Introduction  
+## Introduction    
 
-For this project, the [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we are using summarizes a heterogeneous set of statistics about articles published by Mashable over a period of two years. The goal is to predict the number of shares in social networks (popularity). We wanted to look at the patterns in the articles that were shared. For example, is the timing of the article, the headline, and the article's content all relevent in determining the number of times the article gets shared.  What about whether an article had a polarizing title versus a generic non-polarizing title.  Then, we wanted to find out whether the number of keywords associated with an article impacted the number of shares it received.  Here are our findings for studying how to predict the number of shares in social networks (popularity).  
+For this project, the [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we are using summarizes a heterogeneous set of statistics about articles published by Mashable over a period of two years. The goal is to predict an article's number of shares to social networks (its popularity). We wanted to look at the patterns in the articles that were shared. For example, is the timing of the article, the headline, and the article's content all relevant in determining the number of times the article gets shared? What about whether an article had a polarizing title versus a generic non-polarizing title. Then, we wanted to find out whether the number of keywords associated with an article impacted the number of shares it received.  Here are our findings for studying how to predict the number of shares in social networks (popularity).  
 
 ## Data  
 
@@ -84,7 +84,7 @@ data$data_channel_is_world <- factor(data$data_channel_is_world)
 
 ```
 
-Next we will begin our look at one specific channel by subsetting the data.  
+Next we will begin our look at one specific channel (`r channel`) by subsetting the data.  
 
 ```{r Subset channel of interest, message=FALSE}
 channel <- channel # set = to channel when ready to automate
@@ -115,7 +115,7 @@ testing <- cData[-idx, ]
 
 Then we thought about the characteristics of an online article that might be associated with someone deciding to "share" the article to someone else. 
 
-We thought it was probably important to consider both the timing of the article, the headline, and the article's content. By timing, we mean that perhaps some readers are more likely to click on an article and share it on the weekend because they generally have more free time to read. But then we plotted the number of articles published each day, and realized not much gets published on the weekend. 
+We thought it was probably important to consider both the timing of the article, the headline, and the article's content. By timing, we mean that perhaps some readers are more likely to click on an article and share it on the weekend because they generally have more free time to read. But then we plotted the number of articles published each day, and realized not much gets published on the weekend, compared to weekdays. To visualize this pattern, we created the chart below:  
 
 ```{r bar by day of week, message=FALSE}
 
@@ -144,6 +144,7 @@ Then we wanted to look at these outliers--the top articles by shares, so we grab
 ```{r Top articles}
 head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
 ```
+You can check out the article's date and title within the URL and see what some of the most-shared articles were in the `r channel` channel during the time period studied.  
 
 Then we wanted to create a visualization that would show us how the variable `title_sentiment_polarity` seemed to impact the number of shares. Our thought was that maybe an article with a more polarizing title would get more shares than one less polarizing, as people want to have some justification for urging a friend to spend time reading the article. A polarizing sentiment could provide that justification for some people. We will plot the polarity of the title's sentiment and include information on the number of words in the title.    
 
@@ -158,6 +159,7 @@ ggplot(training, aes(x = title_sentiment_polarity,
        color = "# Words in Title")
 ```
 
+In this plot of the impact of the title's sentiment polarity on shares, an upward trend in the plotted points would indicate that articles with higher values of title sentiment polarity tend to be shared more often. Note that polarity values can be positive or negative. 
 
 Finally, we thought about how the content of an article might lead someone to share it. Maybe people share shorter articles more than long ones. Maybe people like to share links with images more than links without images, we thought. So we took a look at an article's length and number of images vs. number of shares.  
 
@@ -174,7 +176,9 @@ ggplot(training, aes(x = n_tokens_content,
 
 ```
 
-Within its metadata, a website can be assigned a number of keywords, which used to give search engines more information about the content. We wondered how the number of keywords related to the number of shares, given that this data is several years old, and that used to be considered a part of search engine optimization.  
+In this plot, a downward trend in plotted points would indicate that shorter articles generally get more shares, while an upward trend would indicate that longer articles achieve more shares. 
+
+Next we looked at an article's keyword characteristics. Within its metadata, a website can be assigned a number of keywords, which used to give search engines more information about the content. We wondered how the number of keywords related to the number of shares, given that this data is several years old, and that used to be considered a part of search engine optimization.  
 
 ```{r Histogram of Keywords vs shares}
 ggplot(training, aes(x = num_keywords,
@@ -185,7 +189,9 @@ ggplot(training, aes(x = num_keywords,
        y = "Number of Shares")
 ```
 
-Before the modeling step, we took one final look at some of the other variables we thought might be important in predicting number of shares, based on the summaries above and our own experiences. 
+The plot depicts circles sized by the number of articles falling into that category of number of keywords and number of shares. So you can how many keywords are typically used, and also whether any specific number of keywords tends to achieve more shares.  
+
+Before the modeling step, we took one final look at a few more of the other variables we thought might be important in predicting number of shares, based on the summaries above and our own experiences. 
 
 ```{r exploratory graph, message=FALSE}
 library(GGally)
@@ -325,12 +331,12 @@ results
 
 # The best model based on the highest R-squared value is:
 winner <- results[which.max(results)]
-
+winner
 ``` 
 
-We have a winning model based on the highest R-Squared value, and it's `r winner`! Our models are not doing that great, and only explain a small percentage of the variation in number of shares, but let's not let that dampen our enthusiasm!   
+We have a winning model based on the highest R-Squared value of `r winner`! Our models are not doing that great, and only explain a small percentage of the variation in number of shares, but let's not let that dampen our enthusiasm!   
 
-If we wanted to improve upon these models, we could increase the tuning value of `mtry` in the Random Forest model. The cost would be the model would take a lot longer to train. We also considered trying to predict the $log(`shares`)$ instead of `shares` itself, but decided that was outside the scope of the assignment. 
+If we wanted to improve upon these models, we could increase the tuning value of `mtry` in the Random Forest model. The cost would be the model would take a lot longer to train. We also considered trying to predict the  $log(`shares`)$  instead of `shares` itself, but decided that was outside the scope of the assignment. 
 
 ## Automation  
 
