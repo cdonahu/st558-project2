@@ -14,19 +14,9 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction  
 
-You should have an introduction section that briefly describes the data and the variables you have to work with (just discuss the ones you want to use). Your target variables is the shares variable.
-
-You should also mention the purpose of your analysis and the methods you’ll use to model the response.
-
-You’ll describe those in more detail later.
-**This section should be done by the ‘second’ group member.**
-
-The [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we are using summarizes a heterogeneous set of statistics about articles published by Mashable over a period of two years. The goal is to predict the number of shares in social networks (popularity).  
+For this project, the [dataset](https://archive.ics.uci.edu/ml/datasets/Online+News+Popularity) we are using summarizes a heterogeneous set of statistics about articles published by Mashable over a period of two years. The goal is to predict the number of shares in social networks (popularity). We wanted to look at the patterns in the articles that were shared. For example, is the timing of the article, the headline, and the article's content all relevent in determining the number of times the article gets shared.  What about whether an article had a polarizing title versus a generic non-polarizing title.  Then, we wanted to find out whether the number of keywords associated with an article impacted the number of shares it received.  Here is our findings for studying how to predict the number of shares in social networks (popularity).  
 
 ## Data  
-
-Use a relative path to import the data. Subset the data to work on the data channel of interest.
-**This section should be done by whoever can get to it first.**  
 
 We'll begin by reading in the data set and looking at how it's structured.  
 
@@ -68,7 +58,6 @@ data$data_channel_is_world <- factor(data$data_channel_is_world)
 
 ```
 
-
 Next we will begin our look at one specific channel by subsetting the data.  
 
 ```{r Subset channel of interest, message=FALSE}
@@ -95,7 +84,6 @@ training <- cData[idx, ]
 testing <- cData[-idx, ]
 
 ```
-
 
 ## Summarizations  
 
@@ -304,6 +292,8 @@ results
 # The best model based on the highest R-squared value is:
 results[which.max(results)]
 ``` 
+
+## Automation  
 
 
 
