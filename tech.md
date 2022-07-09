@@ -23,8 +23,8 @@ relevent in determining the number of times the article gets shared.
 What about whether an article had a polarizing title versus a generic
 non-polarizing title. Then, we wanted to find out whether the number of
 keywords associated with an article impacted the number of shares it
-received. Here is our findings for studying how to predict the number of
-shares in social networks (popularity).
+received. Here are our findings for studying how to predict the number
+of shares in social networks (popularity).
 
 ## Data
 
@@ -189,6 +189,18 @@ library(plyr)
 library(tidyverse)
 data <- select(data, -timedelta)
 
+# Add a day column for data exploration/plotting purposes
+data$day <- case_when(
+  data$weekday_is_monday == 1 ~ "Monday",
+  data$weekday_is_tuesday == 1 ~ "Tuesday",
+  data$weekday_is_wednesday == 1 ~ "Wednesday",
+  data$weekday_is_thursday == 1 ~ "Thursday",
+  data$weekday_is_friday == 1 ~ "Friday",
+  data$weekday_is_saturday == 1 ~ "Saturday",
+  data$weekday_is_sunday == 1 ~ "Sunday"
+)
+data$day <- as_factor(data$day)
+
 #Converting categorical values from numeric to factor - Weekdays
 data$weekday_is_monday <- factor(data$weekday_is_monday)
 data$weekday_is_tuesday <- factor(data$weekday_is_tuesday)
@@ -197,6 +209,17 @@ data$weekday_is_thursday <- factor(data$weekday_is_thursday)
 data$weekday_is_friday <- factor(data$weekday_is_friday)
 data$weekday_is_saturday <- factor(data$weekday_is_saturday)
 data$weekday_is_sunday <- factor(data$weekday_is_sunday)
+
+# Add a channel column 
+data$chan <- case_when(
+  data$data_channel_is_lifestyle == 1 ~ "Lifestyle",
+  data$data_channel_is_entertainment == 1 ~ "Entertainment",
+  data$data_channel_is_bus == 1 ~ "Business",
+  data$data_channel_is_socmed == 1 ~ "Social Media",
+  data$data_channel_is_tech == 1 ~ "Technology",
+  data$data_channel_is_world == 1 ~ "World"
+)
+data$chan <- as_factor(data$chan)
 
 #Converting categorical values from numeric to factor - News subjects
 data$data_channel_is_lifestyle <- factor(data$data_channel_is_lifestyle) 
@@ -247,26 +270,56 @@ We thought it was probably important to consider both the timing of the
 article, the headline, and the article’s content. By timing, we mean
 that perhaps some readers are more likely to click on an article and
 share it on the weekend because they generally have more free time to
-read. We looked at numbers of shares on weekends vs. weekdays to see if
-that held true.
+read. But then we plotted the number of articles published each day, and
+realized not much gets published on the weekend.
 
 ``` r
-training %>% group_by(is_weekend) %>%
-  summarise(avgShares = mean(shares),
-            medianShares = median(shares),
-            stdevShares = sd(shares)
-            )
+ggplot(data) + 
+  geom_bar(aes(x = day, fill = chan)) +
+  labs(title = "Number of Articles by Day of Week",
+       x = "Day of the Week",
+       y = "Number of Articles",
+       fill = "Channel")
 ```
 
-    ##   avgShares medianShares stdevShares
-    ## 1    3092.6         1700    10244.49
+![](./tech_images/bar%20by%20day%20of%20week-1.png)<!-- -->
 
-The average and median calculations are measures of centrality, so that
-we can compare shares on weekends vs. on weekdays. The standard
-deviation of shares is a measure of the spread of the data, so that we
-can see if the average number of shares per article is more consistent
-on weekends or on weekdays. A higher standard deviation means the number
-of shares varies more from the average.
+So we did away with that theory, and we will instead look at just one
+channel’s number of shares across days of the week.
+
+``` r
+ggplot(training, aes(x = day, y = shares)) +
+  geom_boxplot() + 
+  geom_jitter(aes(color = day)) + 
+  ggtitle("Boxplot for Shares")
+```
+
+![](./tech_images/boxplot%20of%20shares%20by%20day%20of%20week-1.png)<!-- -->
+
+The boxplot shows the distribution of the number of shares by the day of
+the week. It can be a good way to see if we have any outliers with
+**way** more shares than a typical article.
+
+Then we wanted to look at these outliers–the top articles by shares, so
+we grabbed a list of those URLs, along with the number of shares.
+
+``` r
+head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
+```
+
+    ## # A tibble: 10 × 2
+    ##    url                                                                 shares
+    ##    <chr>                                                                <dbl>
+    ##  1 http://mashable.com/2014/04/09/first-100-gilt-soundcloud-stitchfix/ 663600
+    ##  2 http://mashable.com/2013/08/24/instagram-acquires-luma/              96100
+    ##  3 http://mashable.com/2014/01/21/kiev-ukraine-protest-photos/          88500
+    ##  4 http://mashable.com/2014/06/18/helloflo-first-moon-party-ad/         70200
+    ##  5 http://mashable.com/2013/10/24/google-calico/                        55200
+    ##  6 http://mashable.com/2014/09/08/whole-foods-instacart-delivery/       53200
+    ##  7 http://mashable.com/2014/10/09/bees-men-arizona/                     52600
+    ##  8 http://mashable.com/2014/10/27/bear-selfies/                         51000
+    ##  9 http://mashable.com/2014/04/10/twitter-profile-pages-brands/         50700
+    ## 10 http://mashable.com/2014/09/16/worst-things-itunes/                  48000
 
 Then we wanted to create a visualization that would show us how the
 variable `title_sentiment_polarity` seemed to impact the number of
@@ -289,27 +342,6 @@ ggplot(training, aes(x = title_sentiment_polarity,
 ```
 
 ![](./tech_images/Scatter%20Plot%20title%20impact%20on%20shares-1.png)<!-- -->
-
-Then we wanted to look at the outliers–the top articles by shares, so we
-grabbed a list of those URLs, along with the number of shares.
-
-``` r
-head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
-```
-
-    ## # A tibble: 10 × 2
-    ##    url                                                                 shares
-    ##    <chr>                                                                <dbl>
-    ##  1 http://mashable.com/2014/04/09/first-100-gilt-soundcloud-stitchfix/ 663600
-    ##  2 http://mashable.com/2013/08/24/instagram-acquires-luma/              96100
-    ##  3 http://mashable.com/2014/01/21/kiev-ukraine-protest-photos/          88500
-    ##  4 http://mashable.com/2014/06/18/helloflo-first-moon-party-ad/         70200
-    ##  5 http://mashable.com/2013/10/24/google-calico/                        55200
-    ##  6 http://mashable.com/2014/09/08/whole-foods-instacart-delivery/       53200
-    ##  7 http://mashable.com/2014/10/09/bees-men-arizona/                     52600
-    ##  8 http://mashable.com/2014/10/27/bear-selfies/                         51000
-    ##  9 http://mashable.com/2014/04/10/twitter-profile-pages-brands/         50700
-    ## 10 http://mashable.com/2014/09/16/worst-things-itunes/                  48000
 
 Finally, we thought about how the content of an article might lead
 someone to share it. Maybe people share shorter articles more than long
@@ -358,23 +390,6 @@ training %>%
   GGally::ggpairs()
 ```
 
-    ## plot: [1,1] [==>---------------------------------------------------] 6% est: 0s
-    ## plot: [1,2] [======>-----------------------------------------------] 12% est: 1s
-    ## plot: [1,3] [=========>--------------------------------------------] 19% est: 1s
-    ## plot: [1,4] [=============>----------------------------------------] 25% est: 1s
-    ## plot: [2,1] [================>-------------------------------------] 31% est: 1s
-    ## plot: [2,2] [===================>----------------------------------] 38% est: 1s
-    ## plot: [2,3] [=======================>------------------------------] 44% est: 1s
-    ## plot: [2,4] [==========================>---------------------------] 50% est: 0s
-    ## plot: [3,1] [=============================>------------------------] 56% est: 0s
-    ## plot: [3,2] [=================================>--------------------] 62% est: 0s
-    ## plot: [3,3] [====================================>-----------------] 69% est: 0s
-    ## plot: [3,4] [=======================================>--------------] 75% est: 0s
-    ## plot: [4,1] [===========================================>----------] 81% est: 0s
-    ## plot: [4,2] [==============================================>-------] 88% est: 0s
-    ## plot: [4,3] [==================================================>---] 94% est: 0s
-    ## plot: [4,4] [======================================================]100% est: 0s
-
 ![](./tech_images/exploratory%20graph-1.png)<!-- -->
 
 Looking across the bottom row of graphs, we can see whether any
@@ -422,7 +437,7 @@ fullFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
               data = training, 
               method = "lm", # linear regression
               preProcess = c("center", "scale", "nzv"),
-              trControl = trainControl(method = "cv", number = 3)
+              trControl = trainControl(method = "cv", number = 2)
               )
 # look at the resulting coefficients
 fullFit$finalModel
@@ -456,17 +471,17 @@ fullFit
     ##   18 predictor
     ## 
     ## Pre-processing: centered (17), scaled (17), remove (1) 
-    ## Resampling: Cross-Validated (3 fold) 
-    ## Summary of sample sizes: 3430, 3430, 3430 
+    ## Resampling: Cross-Validated (2 fold) 
+    ## Summary of sample sizes: 2572, 2573 
     ## Resampling results:
     ## 
     ##   RMSE      Rsquared    MAE     
-    ##   8330.193  0.01754847  2406.361
+    ##   9390.032  0.01027755  2475.099
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
-The next multiple regresson model includes a smaller subset of variables
-that we think would be important.
+The next multiple regresson model is a little more simplified and
+includes a smaller subset of variables that we think would be important.
 
 ``` r
 smallFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
@@ -477,7 +492,7 @@ smallFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
               data = training, 
               method = "lm", 
               preProcess = c("center", "scale", "nzv"),
-              trControl = trainControl(method = "cv", number = 3)
+              trControl = trainControl(method = "cv", number = 2)
               )
 # look at the resulting coefficients
 smallFit$finalModel
@@ -509,12 +524,12 @@ smallFit
     ##   13 predictor
     ## 
     ## Pre-processing: centered (12), scaled (12), remove (1) 
-    ## Resampling: Cross-Validated (3 fold) 
-    ## Summary of sample sizes: 3430, 3430, 3430 
+    ## Resampling: Cross-Validated (2 fold) 
+    ## Summary of sample sizes: 2573, 2572 
     ## Resampling results:
     ## 
     ##   RMSE      Rsquared    MAE     
-    ##   8403.749  0.02128477  2396.853
+    ##   9099.087  0.01663601  2389.436
     ## 
     ## Tuning parameter 'intercept' was held constant at a value of TRUE
 
@@ -528,16 +543,16 @@ each of many bootstrap samples / tree fits.
 # load required package
 library(randomForest)
 # set up the mtry parameter 
-tunegrid <- expand.grid(.mtry=c(1:5))
+tunegrid <- expand.grid(.mtry=c(1:3)) # This is key for amount of time running
 
 #train model
-rfFit <- train(x = select(training, -url, -shares), 
+rfFit <- train(x = select(training, -url, -shares, -day, -chan), 
                 y = training$shares,
                 method = "rf",
                 tuneGrid = tunegrid,
                 preProcess = c("center", "scale", "nzv"),
                 trControl = trainControl(method = "cv", 
-                                         number = 3)
+                                         number = 2)
                 )
 rfFit
 ```
@@ -548,19 +563,17 @@ rfFit
     ##   58 predictor
     ## 
     ## Pre-processing: centered (44), scaled (44), ignore (13), remove (1) 
-    ## Resampling: Cross-Validated (3 fold) 
-    ## Summary of sample sizes: 3430, 3430, 3430 
+    ## Resampling: Cross-Validated (2 fold) 
+    ## Summary of sample sizes: 2573, 2572 
     ## Resampling results across tuning parameters:
     ## 
     ##   mtry  RMSE      Rsquared    MAE     
-    ##   1     8534.951  0.02346989  2350.700
-    ##   2     8546.494  0.02536683  2385.903
-    ##   3     8515.839  0.03787454  2395.242
-    ##   4     8544.128  0.02956386  2394.875
-    ##   5     8606.463  0.02200020  2430.792
+    ##   1     8937.529  0.01383934  2349.939
+    ##   2     8954.891  0.01548638  2375.853
+    ##   3     8987.531  0.01533669  2410.382
     ## 
     ## RMSE was used to select the optimal model using the smallest value.
-    ## The final value used for the model was mtry = 3.
+    ## The final value used for the model was mtry = 1.
 
 ### Boosted Tree
 
@@ -570,213 +583,147 @@ library(gbm)
 
 # set up the parameters
 gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3), 
-                        n.trees = c(25, 50, 100), 
+                        n.trees = c(25, 50), 
                         shrinkage = 0.1,
                         n.minobsinnode = 10)
 
 #train model
-btFit <- train(x = select(training, -url, -shares), 
+btFit <- train(x = select(training, -url, -shares, -day, -chan), 
                 y = training$shares,
                 method = "gbm",
                 tuneGrid = gbmGrid,
                 preProcess = c("center", "scale", "nzv"),
                 trControl = trainControl(method = "cv", 
-                                         number = 3)
+                                         number = 2)
                 )
 ```
 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 148063823.3610             nan     0.1000 25650.1207
-    ##      2 147977793.1383             nan     0.1000 -19851.1058
-    ##      3 145740757.1765             nan     0.1000 -303134.4102
-    ##      4 144005837.5751             nan     0.1000 -655502.2185
-    ##      5 142753693.4282             nan     0.1000 -542546.8120
-    ##      6 143042285.0628             nan     0.1000 -850361.7803
-    ##      7 143288423.8487             nan     0.1000 -772966.3450
-    ##      8 143543235.5344             nan     0.1000 -737343.0448
-    ##      9 143381372.6093             nan     0.1000 102979.0239
-    ##     10 141737086.7618             nan     0.1000 -378532.3291
-    ##     20 138061686.5764             nan     0.1000 -1113724.8104
-    ##     40 133960264.2083             nan     0.1000 -742950.0537
-    ##     60 131567321.0428             nan     0.1000 -969770.0289
-    ##     80 126105955.8717             nan     0.1000 684914.7973
-    ##    100 121880862.0370             nan     0.1000 -1033734.6314
+    ##      1 187411336.4289             nan     0.1000 -417036.6811
+    ##      2 187315041.1750             nan     0.1000 -11989.7305
+    ##      3 187219557.7922             nan     0.1000 -67475.8987
+    ##      4 184575699.7356             nan     0.1000 -831074.7824
+    ##      5 184853478.8149             nan     0.1000 -711046.0559
+    ##      6 182655916.9405             nan     0.1000 -519267.9292
+    ##      7 181124273.7981             nan     0.1000 -1213845.9987
+    ##      8 181523499.9678             nan     0.1000 -1181914.9749
+    ##      9 182000064.0750             nan     0.1000 -1498289.3653
+    ##     10 180419285.0125             nan     0.1000 -1274277.1448
+    ##     20 180897695.2189             nan     0.1000 -1040917.1238
+    ##     40 173203397.0507             nan     0.1000 -1216717.7567
+    ##     50 173166907.8161             nan     0.1000 -2251722.2083
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 147983772.0331             nan     0.1000 37033.1670
-    ##      2 145668854.2372             nan     0.1000 -323579.8875
-    ##      3 145552262.3714             nan     0.1000 81362.6526
-    ##      4 143679231.1466             nan     0.1000 -551342.6128
-    ##      5 141905086.0651             nan     0.1000 -608816.7914
-    ##      6 140618581.0521             nan     0.1000 -695703.1911
-    ##      7 140799624.0339             nan     0.1000 -909118.3053
-    ##      8 139749563.2060             nan     0.1000 -665778.0935
-    ##      9 140007734.8512             nan     0.1000 -1104167.9770
-    ##     10 140259024.7815             nan     0.1000 -890470.4735
-    ##     20 137046777.9748             nan     0.1000 -934302.5606
-    ##     40 130536691.6854             nan     0.1000 -1238712.5644
-    ##     60 128121434.4854             nan     0.1000 -871976.6963
-    ##     80 119817369.4357             nan     0.1000 231927.7242
-    ##    100 114841963.3073             nan     0.1000 -1038696.0093
+    ##      1 187493025.3950             nan     0.1000 -879392.6589
+    ##      2 187675667.6736             nan     0.1000 -673770.9103
+    ##      3 184701981.6654             nan     0.1000 -338977.0446
+    ##      4 182329889.0610             nan     0.1000 -304463.0095
+    ##      5 180614445.7788             nan     0.1000 -1054695.9039
+    ##      6 179569746.4614             nan     0.1000 -2675415.1326
+    ##      7 179877369.2654             nan     0.1000 -1401151.0727
+    ##      8 178105111.1356             nan     0.1000 -404944.9405
+    ##      9 178348433.5643             nan     0.1000 -1050241.9081
+    ##     10 178511972.7793             nan     0.1000 -816986.7548
+    ##     20 170686447.3367             nan     0.1000 -1094660.3379
+    ##     40 163718675.1623             nan     0.1000 -989856.3463
+    ##     50 158001500.4582             nan     0.1000 -2361265.3716
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 147873885.0333             nan     0.1000 160176.9574
-    ##      2 145554122.3587             nan     0.1000 -364695.7043
-    ##      3 145664481.8924             nan     0.1000 -478842.7165
-    ##      4 143703302.6910             nan     0.1000 -498218.2673
-    ##      5 141709419.4347             nan     0.1000 -435259.1078
-    ##      6 141834807.2150             nan     0.1000 -528259.9855
-    ##      7 140277644.7697             nan     0.1000 -703294.4399
-    ##      8 139088413.9896             nan     0.1000 -691986.6033
-    ##      9 137758940.6406             nan     0.1000 -460447.5674
-    ##     10 136647930.1718             nan     0.1000 -1073561.2230
-    ##     20 132187043.0032             nan     0.1000 -596226.1947
-    ##     40 122352151.5234             nan     0.1000 -415216.6068
-    ##     60 114863362.9689             nan     0.1000 -816923.6560
-    ##     80 108691137.5007             nan     0.1000 -1128191.8454
-    ##    100 100691624.1911             nan     0.1000 -178741.8077
+    ##      1 190198768.4180             nan     0.1000 35792.5251
+    ##      2 187114587.9506             nan     0.1000 -193345.6358
+    ##      3 186974441.5255             nan     0.1000 -56526.5162
+    ##      4 187197771.0288             nan     0.1000 -685145.5263
+    ##      5 187088143.3443             nan     0.1000 25432.1914
+    ##      6 184598243.9796             nan     0.1000 -617750.0507
+    ##      7 184752113.6736             nan     0.1000 -587095.5879
+    ##      8 185056615.9797             nan     0.1000 -871320.6202
+    ##      9 183131010.0853             nan     0.1000 -1458678.5807
+    ##     10 183483163.1438             nan     0.1000 -1263490.3052
+    ##     20 171964559.3054             nan     0.1000 -1709516.2843
+    ##     40 165281754.4977             nan     0.1000 -1041316.6495
+    ##     50 162037723.5847             nan     0.1000 -1039269.1456
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 148660944.2798             nan     0.1000 54184.9463
-    ##      2 146655480.0825             nan     0.1000 -105853.4489
-    ##      3 144843250.8186             nan     0.1000 -499754.7273
-    ##      4 143469739.3180             nan     0.1000 -531411.9926
-    ##      5 143371663.5634             nan     0.1000 66350.8020
-    ##      6 142024037.8923             nan     0.1000 -220745.8739
-    ##      7 141149567.5916             nan     0.1000 -909536.3660
-    ##      8 140847214.7091             nan     0.1000 329429.6273
-    ##      9 141061319.5840             nan     0.1000 -606956.2354
-    ##     10 140330008.2843             nan     0.1000 -1022494.7043
-    ##     20 138666107.0741             nan     0.1000 -1103009.9516
-    ##     40 136545267.0252             nan     0.1000 389625.4878
-    ##     60 134274212.7843             nan     0.1000 -762196.1156
-    ##     80 125920906.3022             nan     0.1000 -973831.3922
-    ##    100 124432377.4960             nan     0.1000 -1276542.6751
+    ##      1 19321807.8640             nan     0.1000 30156.8619
+    ##      2 19247458.8896             nan     0.1000 67434.1216
+    ##      3 19182636.7307             nan     0.1000 -6902.3050
+    ##      4 19103764.7590             nan     0.1000 46660.8677
+    ##      5 19055790.6937             nan     0.1000 50652.1716
+    ##      6 19009525.5686             nan     0.1000 42650.5108
+    ##      7 18971641.2684             nan     0.1000  763.9546
+    ##      8 18923601.0222             nan     0.1000 29358.7267
+    ##      9 18893014.9236             nan     0.1000 10114.0185
+    ##     10 18827947.1926             nan     0.1000 -26904.3883
+    ##     20 18546357.4287             nan     0.1000 -6603.1313
+    ##     40 18151639.9486             nan     0.1000 -7497.0984
+    ##     50 18031356.8247             nan     0.1000 -8498.5778
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 148561236.7979             nan     0.1000 62192.7512
-    ##      2 148497369.2596             nan     0.1000 4763.0202
-    ##      3 148364974.3516             nan     0.1000 55740.2458
-    ##      4 145959423.1789             nan     0.1000 -179954.0954
-    ##      5 144161295.9068             nan     0.1000 -452988.6000
-    ##      6 142860695.8744             nan     0.1000 -674914.9235
-    ##      7 141295358.0420             nan     0.1000 95928.2486
-    ##      8 141442815.4376             nan     0.1000 -530165.4451
-    ##      9 141350459.8525             nan     0.1000 54462.9189
-    ##     10 140270312.5998             nan     0.1000 -728493.7516
-    ##     20 135470301.7644             nan     0.1000 47388.1669
-    ##     40 125720367.4410             nan     0.1000 -537019.3149
-    ##     60 117640896.4102             nan     0.1000 -435709.5580
-    ##     80 110771830.0305             nan     0.1000 -132504.2342
-    ##    100 100716406.4208             nan     0.1000 -90483.7152
+    ##      1 19229996.5595             nan     0.1000 49397.1970
+    ##      2 19080377.1241             nan     0.1000 87386.2731
+    ##      3 18950998.7040             nan     0.1000 62214.9643
+    ##      4 18828436.3338             nan     0.1000 -12837.2679
+    ##      5 18728394.4506             nan     0.1000 30326.4250
+    ##      6 18666034.1894             nan     0.1000 29476.9227
+    ##      7 18587961.5422             nan     0.1000 -1625.7476
+    ##      8 18521617.5522             nan     0.1000 68918.6571
+    ##      9 18452011.7136             nan     0.1000 -39607.2300
+    ##     10 18393644.5288             nan     0.1000 -15226.3526
+    ##     20 17555542.9603             nan     0.1000 42481.0992
+    ##     40 16354546.3815             nan     0.1000 -24058.5138
+    ##     50 16067952.5133             nan     0.1000 -16368.2475
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 148641684.4413             nan     0.1000 5381.7102
-    ##      2 148431894.0357             nan     0.1000 64107.4091
-    ##      3 148265048.2455             nan     0.1000 -19028.0418
-    ##      4 148119887.2486             nan     0.1000 -58857.8179
-    ##      5 145706329.5288             nan     0.1000 -200352.6544
-    ##      6 145568374.1020             nan     0.1000 36207.1647
-    ##      7 143833125.4129             nan     0.1000 -611489.0974
-    ##      8 142540418.9287             nan     0.1000 -317981.1121
-    ##      9 141160871.0775             nan     0.1000 -180158.7563
-    ##     10 141382620.5687             nan     0.1000 -732794.4086
-    ##     20 135927152.3655             nan     0.1000 -1156775.2604
-    ##     40 128804037.5123             nan     0.1000 -636382.9154
-    ##     60 125246249.9829             nan     0.1000 -821269.9020
-    ##     80 119637165.1089             nan     0.1000 -1045249.3532
-    ##    100 116478054.5585             nan     0.1000 -1621162.1309
+    ##      1 19250068.4252             nan     0.1000 134945.7245
+    ##      2 19043058.5182             nan     0.1000 137112.5084
+    ##      3 18844150.2123             nan     0.1000 65619.5964
+    ##      4 18697639.4587             nan     0.1000 96514.2952
+    ##      5 18549492.8541             nan     0.1000 40112.4571
+    ##      6 18456967.4558             nan     0.1000 -23778.5859
+    ##      7 18365791.1321             nan     0.1000 -10733.9253
+    ##      8 18269699.6381             nan     0.1000  115.0864
+    ##      9 18205749.5867             nan     0.1000 -12943.3655
+    ##     10 18137639.0373             nan     0.1000 24139.0874
+    ##     20 17153195.7090             nan     0.1000 23545.2499
+    ##     40 15687999.7203             nan     0.1000 -16584.5415
+    ##     50 15149686.7931             nan     0.1000 -60840.0776
     ## 
     ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 17833318.5829             nan     0.1000 63474.1888
-    ##      2 17742313.3607             nan     0.1000 47117.9467
-    ##      3 17671991.1795             nan     0.1000 19275.1833
-    ##      4 17611974.0996             nan     0.1000 47973.5167
-    ##      5 17568128.4101             nan     0.1000 41170.4875
-    ##      6 17523733.3179             nan     0.1000 14118.2134
-    ##      7 17483241.4813             nan     0.1000 5511.5838
-    ##      8 17463406.9429             nan     0.1000 -2324.4415
-    ##      9 17408741.1420             nan     0.1000 24656.8136
-    ##     10 17381601.6910             nan     0.1000 19642.4716
-    ##     20 17190065.3695             nan     0.1000 7981.5891
-    ##     40 16900666.8297             nan     0.1000 -6745.8719
-    ##     60 16726230.2320             nan     0.1000 -10601.8114
-    ##     80 16590356.3095             nan     0.1000 -14456.7618
-    ##    100 16475170.3631             nan     0.1000 -8569.4516
-    ## 
-    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 17766346.9806             nan     0.1000 56736.2051
-    ##      2 17678133.7500             nan     0.1000 20630.7373
-    ##      3 17598085.3548             nan     0.1000 58901.3388
-    ##      4 17484103.1137             nan     0.1000 83815.1038
-    ##      5 17438361.5365             nan     0.1000 26138.8624
-    ##      6 17358460.4518             nan     0.1000 68064.3450
-    ##      7 17296814.1009             nan     0.1000 52609.3753
-    ##      8 17237106.2927             nan     0.1000 16804.5338
-    ##      9 17146649.5729             nan     0.1000 32377.2155
-    ##     10 17111460.3518             nan     0.1000 23311.1973
-    ##     20 16660700.3761             nan     0.1000 -66099.4297
-    ##     40 15945108.9211             nan     0.1000 -17707.0436
-    ##     60 15553958.5983             nan     0.1000 -8915.8994
-    ##     80 15252097.7148             nan     0.1000 -12191.8198
-    ##    100 14752764.1638             nan     0.1000 -14133.4408
-    ## 
-    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 17742111.4583             nan     0.1000 124783.2633
-    ##      2 17606469.2702             nan     0.1000 82431.4787
-    ##      3 17501810.7437             nan     0.1000 54918.3504
-    ##      4 17405072.8258             nan     0.1000 38631.6417
-    ##      5 17330928.6339             nan     0.1000 27051.7200
-    ##      6 17273886.5301             nan     0.1000 19550.2706
-    ##      7 17136679.0916             nan     0.1000 -14515.4741
-    ##      8 17040537.6341             nan     0.1000 29148.1239
-    ##      9 16917748.1226             nan     0.1000 3455.6902
-    ##     10 16807844.2593             nan     0.1000 -61544.5072
-    ##     20 15916752.4508             nan     0.1000  892.9668
-    ##     40 14796604.3371             nan     0.1000 -12186.5653
-    ##     60 14046177.9806             nan     0.1000 -13658.7825
-    ##     80 13478153.8763             nan     0.1000 -4501.0982
-    ##    100 13081406.8759             nan     0.1000 1000.4777
-    ## 
-    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
-    ##      1 103455401.9405             nan     0.1000 -8275.8478
-    ##      2 103325530.7674             nan     0.1000 50686.4174
-    ##      3 103209132.1938             nan     0.1000 65886.1164
-    ##      4 103079877.5710             nan     0.1000 142583.7227
-    ##      5 103012747.9923             nan     0.1000 41414.9735
-    ##      6 102896140.2324             nan     0.1000 49929.3625
-    ##      7 102836518.1760             nan     0.1000 47681.7552
-    ##      8 101687160.3011             nan     0.1000 -368314.7176
-    ##      9 101854403.0048             nan     0.1000 -530271.5802
-    ##     10 101209097.6471             nan     0.1000 -321882.1916
-    ##     20 98371000.3479             nan     0.1000 -479056.9093
-    ##     25 97640338.3307             nan     0.1000 -988332.3644
+    ##      1 104783348.7888             nan     0.1000 52464.4497
+    ##      2 104611045.9187             nan     0.1000 130204.5066
+    ##      3 102911709.9231             nan     0.1000 -73977.5590
+    ##      4 101812712.2860             nan     0.1000 -318471.0412
+    ##      5 101641375.1843             nan     0.1000 164120.1966
+    ##      6 101456302.3006             nan     0.1000 153387.0481
+    ##      7 101353538.2437             nan     0.1000 52009.3526
+    ##      8 100517755.4348             nan     0.1000 -314467.0136
+    ##      9 99813060.6864             nan     0.1000 -929962.2988
+    ##     10 99941591.6014             nan     0.1000 -628839.3853
+    ##     20 97022742.9991             nan     0.1000 -429280.7764
+    ##     40 92092588.5944             nan     0.1000 91375.2024
+    ##     50 89958604.9529             nan     0.1000 -677745.5398
 
 ## Comparison
 
-All four of the models should be compared on the test set and a winner
-declared (this should be automated to be correct across all the created
-documents).
-
-Test each model on our test set of data.
+We compared all four of these models using the test dataset.
 
 ``` r
 # full fit multiple regression model
 fullPred <- predict(fullFit, newdata = testing)
 # selected variable multiple regression model
-smallPred <- predict(selectFit, newdata = testing)
+smallPred <- predict(smallFit, newdata = testing)
 # random forest
 rfPred <- predict(rfFit, newdata = testing)
 # boosted tree
 btPred <- predict(btFit, newdata = testing)
 ```
 
-Now we will compare the four candidate models and choose one.
+Now we will compare the four candidate models and choose one “winner”:
 
 ``` r
 # Create a named with results (Rsquared values) for each model
 results <- c("Full Fit" = max(fullFit$results$Rsquared), 
-           "Small Fit" = max(selectFit$results$Rsquared),
+           "Small Fit" = max(smallFit$results$Rsquared),
            "Random Forest" = max(rfFit$results$Rsquared),
            "Boosted Tree" = max(btFit$results$Rsquared))
 
@@ -785,15 +732,25 @@ results
 ```
 
     ##      Full Fit     Small Fit Random Forest  Boosted Tree 
-    ##   0.017548472   0.019401910   0.037874540   0.009079709
+    ##    0.01027755    0.01663601    0.01548638    0.01387625
 
 ``` r
 # The best model based on the highest R-squared value is:
-results[which.max(results)]
+winner <- results[which.max(results)]
 ```
 
-    ## Random Forest 
-    ##    0.03787454
+We have a winning model based on the highest R-Squared value, and it’s
+0.016636! Our models are not doing that great, and only explain a small
+percentage of the variation in number of shares, but let’s not let that
+dampen our enthusiasm!
+
+If we wanted to improve upon these models, we could increase the tuning
+value of `mtry` in the Random Forest model. The cost would be the model
+would take a lot longer to train. We also considered trying to predict
+the
+![log(\`shares\`)](https://latex.codecogs.com/png.image?%5Cdpi%7B110%7D&space;%5Cbg_white&space;log%28%60shares%60%29 "log(`shares`)")
+instead of `shares` itself, but decided that was outside the scope of
+the assignment.
 
 ## Automation
 

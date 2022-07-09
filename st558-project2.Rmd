@@ -187,7 +187,7 @@ ggplot(training, aes(x = num_keywords,
 
 Before the modeling step, we took one final look at some of the other variables we thought might be important in predicting number of shares, based on the summaries above and our own experiences. 
 
-```{r exploratory graph}
+```{r exploratory graph, message=FALSE}
 library(GGally)
 training %>% 
   select(self_reference_avg_sharess, LDA_00, rate_negative_words, shares) %>%
@@ -258,7 +258,7 @@ library(randomForest)
 tunegrid <- expand.grid(.mtry=c(1:3)) # This is key for amount of time running
 
 #train model
-rfFit <- train(x = select(training, -url, -shares), 
+rfFit <- train(x = select(training, -url, -shares, -day, -chan), 
                 y = training$shares,
                 method = "rf",
                 tuneGrid = tunegrid,
@@ -283,7 +283,7 @@ gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3),
                         n.minobsinnode = 10)
 
 #train model
-btFit <- train(x = select(training, -url, -shares), 
+btFit <- train(x = select(training, -url, -shares, -day, -chan), 
                 y = training$shares,
                 method = "gbm",
                 tuneGrid = gbmGrid,
