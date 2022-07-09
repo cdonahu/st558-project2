@@ -33,9 +33,11 @@ sum(is.na(data))
 
 The data has just one column that is not numeric, and that column is the first one and contains URLs for the Mashable articles for each observation. We will keep it, but won't use it in our models. The second column, `timedelta`, is not useful for prediction either. We will drop this one. The other columns contain numeric data that we may be able to use to predict the number of shares. The last column is our target variable, `shares`. The data is set up nicely for what we want to do.  
 
-```{r, drop and clean up columns}
+```{r drop and clean up columns, message=FALSE}
 
 # Dropping the timedelta column
+
+library(plyr)
 library(tidyverse)
 data <- select(data, -timedelta)
 
@@ -61,7 +63,7 @@ data$data_channel_is_world <- factor(data$data_channel_is_world)
 Next we will begin our look at one specific channel by subsetting the data.  
 
 ```{r Subset channel of interest, message=FALSE}
-channel <- "bus" # set = to channel when ready to automate
+channel <- channel # set = to channel when ready to automate
 
 channelNow <- paste("data_channel_is_", channel, sep = "")
 
@@ -218,7 +220,7 @@ Random forest is a tree-based method of prediction. It does not use all predicto
 # load required package
 library(randomForest)
 # set up the mtry parameter 
-tunegrid <- expand.grid(.mtry=c(1:15))
+tunegrid <- expand.grid(.mtry=c(1:5))
 
 #train model
 rfFit <- train(x = select(training, -url, -shares), 
@@ -238,7 +240,6 @@ rfFit
 ```{r boosted tree model, message=FALSE, warning=FALSE}
 # Load required packages
 library(gbm)
-library(plyr)
 
 # set up the parameters
 gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3), 
