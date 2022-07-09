@@ -10,6 +10,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.path = "./images/")
 ```
 
 ## Introduction  
@@ -186,7 +187,7 @@ fullFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
               data = training, 
               method = "lm", # linear regression
               preProcess = c("center", "scale", "nzv"),
-              trControl = trainControl(method = "cv", number = 5)
+              trControl = trainControl(method = "cv", number = 3)
               )
 # look at the resulting coefficients
 fullFit$finalModel
@@ -204,7 +205,7 @@ smallFit <- train(shares ~ n_tokens_content + num_hrefs + num_self_hrefs +
               data = training, 
               method = "lm", 
               preProcess = c("center", "scale", "nzv"),
-              trControl = trainControl(method = "cv", number = 5)
+              trControl = trainControl(method = "cv", number = 3)
               )
 # look at the resulting coefficients
 smallFit$finalModel
@@ -229,7 +230,7 @@ rfFit <- train(x = select(training, -url, -shares),
                 tuneGrid = tunegrid,
                 preProcess = c("center", "scale", "nzv"),
                 trControl = trainControl(method = "cv", 
-                                         number = 5)
+                                         number = 3)
                 )
 rfFit
 
@@ -243,7 +244,7 @@ library(gbm)
 
 # set up the parameters
 gbmGrid <-  expand.grid(interaction.depth = c(1, 2, 3), 
-                        n.trees = c(25, 50, 100, 150), 
+                        n.trees = c(25, 50, 100), 
                         shrinkage = 0.1,
                         n.minobsinnode = 10)
 
@@ -254,7 +255,7 @@ btFit <- train(x = select(training, -url, -shares),
                 tuneGrid = gbmGrid,
                 preProcess = c("center", "scale", "nzv"),
                 trControl = trainControl(method = "cv", 
-                                         number = 5)
+                                         number = 3)
                 )
 
 ```
@@ -296,7 +297,7 @@ results[which.max(results)]
 
 ## Automation  
 
-
+We generated these reports automatically for each channel ("lifestyle", "entertainment", "bus", "socmed", "tech", and "world") by creating a function that uses the `rmarkdown` package to render a Github document, and then using a for loop to execute that function for each channel in a list. That's how the page you're reading was generated!  
 
 
 
