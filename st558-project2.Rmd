@@ -126,6 +126,16 @@ ggplot(data) +
        y = "Number of Articles",
        fill = "Channel")
 ```
+A table of the above chart:
+```{r }
+data %>% group_by(day,chan) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
 
 So we did away with that theory, and we will instead look at just the `r channel` channel's number of shares across days of the week. 
 
@@ -135,7 +145,16 @@ ggplot(training, aes(x = day, y = shares)) +
   geom_jitter(aes(color = day)) + 
   ggtitle("Boxplot for Shares")
 ```
-
+A table of the above chart:
+```{r }
+training %>% group_by(day,chan) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
 
 The boxplot shows the distribution of the number of shares by the day of the week. It can be a good way to see if we have any outliers with **way** more shares than a typical article in this channel.  
 
@@ -158,6 +177,16 @@ ggplot(training, aes(x = title_sentiment_polarity,
        y = "Number of Shares",
        color = "# Words in Title")
 ```
+A table of the above chart:
+```{r }
+training %>% group_by(title_sentiment_polarity) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
 
 In this plot of the impact of the title's sentiment polarity on shares, an upward trend in the plotted points would indicate that articles with higher values of title sentiment polarity tend to be shared more often. Note that polarity values can be positive or negative. 
 
@@ -175,6 +204,16 @@ ggplot(training, aes(x = n_tokens_content,
        color = "# Images")
 
 ```
+A table of the above chart:
+```{r }
+training %>% group_by(n_tokens_content) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
 
 In this plot, a downward trend in plotted points would indicate that shorter articles generally get more shares, while an upward trend would indicate that longer articles achieve more shares. 
 
@@ -187,6 +226,16 @@ ggplot(training, aes(x = num_keywords,
   labs(title = "Number of Keywords vs. Shares",
        x = "Number of Keywords",
        y = "Number of Shares")
+```
+A table of the above chart:
+```{r }
+training %>% group_by(num_keywords) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
 ```
 
 The plot depicts circles sized by the number of articles falling into that category of number of keywords and number of shares. So you can how many keywords are typically used, and also whether any specific number of keywords tends to achieve more shares.  
@@ -278,7 +327,9 @@ rfFit
 
 ```
 
-### Boosted Tree  
+### Boosted Tree
+
+Boosted tree models is another tree-based method of prediction. Although, unlike random forest models, boosted tree models grow sequentially with each subsequent grown on a modified version of the original data and the predictions updated as trees grow.  
 
 ```{r boosted tree model, message=FALSE, warning=FALSE}
 # Load required packages
