@@ -241,11 +241,11 @@ channelNow <- paste("data_channel_is_", channel, sep = "")
 cData <- data[data[channelNow] == 1, ] # Extract rows of interest
 ```
 
-We then split the data into training and testing sets (70% and 30%,
-respectively). We will only explore the training set, and will keep the
-testing set in reserve to determine the quality of our predictions. We
-will use the function `createDataPartition()` from the `caret` package
-to split the data.
+We then split the socmed channel’s data into training and testing sets
+(70% and 30%, respectively). We will only explore the training set, and
+will keep the testing set in reserve to determine the quality of our
+predictions. We will use the function `createDataPartition()` from the
+`caret` package to split the data.
 
 ``` r
 library(caret) # Using createDataPartition from caret
@@ -283,10 +283,40 @@ ggplot(data) +
        fill = "Channel")
 ```
 
-![](./socmed_images/bar%20by%20day%20of%20week-1.png)<!-- -->
+![](./socmed_images/bar%20by%20day%20of%20week-1.png)<!-- --> A table of
+the above chart:
 
-So we did away with that theory, and we will instead look at just one
-channel’s number of shares across days of the week.
+``` r
+data %>% group_by(day,chan) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
+
+    ## `summarise()` has grouped output by 'day'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 49 × 8
+    ## # Groups:   day [7]
+    ##    day     chan              n   Avg     Sd Median   Min    Max
+    ##    <fct>   <fct>         <int> <dbl>  <dbl>  <dbl> <dbl>  <dbl>
+    ##  1 Monday  Entertainment  1358 2931.  7176.   1100    59 112600
+    ##  2 Monday  Business       1153 3887. 28313.   1400     1 690400
+    ##  3 Monday  Technology     1235 2821.  3915.   1600   192  51000
+    ##  4 Monday  Lifestyle       322 4346. 14073.   1600   109 196700
+    ##  5 Monday  World          1356 2456.  6865.   1100    43 141400
+    ##  6 Monday  Social Media    337 4010.  6046.   2300    53  57600
+    ##  7 Monday  <NA>            900 6961. 17388.   1900     4 200100
+    ##  8 Tuesday Entertainment  1285 2708.  6453.   1100    47  98000
+    ##  9 Tuesday Business       1182 2932. 10827.   1300    44 310800
+    ## 10 Tuesday Technology     1474 2883.  4722.   1600   104  88500
+    ## # … with 39 more rows
+
+So we did away with that theory, and we will instead look at just the
+socmed channel’s number of shares across days of the week.
 
 ``` r
 ggplot(training, aes(x = day, y = shares)) +
@@ -296,31 +326,58 @@ ggplot(training, aes(x = day, y = shares)) +
 ```
 
 ![](./socmed_images/boxplot%20of%20shares%20by%20day%20of%20week-1.png)<!-- -->
+A table of the above chart:
+
+``` r
+training %>% group_by(day,chan) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
+
+    ## `summarise()` has grouped output by 'day'. You can override using the
+    ## `.groups` argument.
+
+    ## # A tibble: 7 × 8
+    ## # Groups:   day [7]
+    ##   day       chan             n   Avg    Sd Median   Min    Max
+    ##   <fct>     <fct>        <int> <dbl> <dbl>  <dbl> <dbl>  <dbl>
+    ## 1 Monday    Social Media   246 4192. 6649.   2350    53  57600
+    ## 2 Tuesday   Social Media   321 3501. 7460.   1900   238 122800
+    ## 3 Wednesday Social Media   296 3717. 5869.   2000    23  59000
+    ## 4 Thursday  Social Media   317 3003. 2791.   2000     5  20200
+    ## 5 Friday    Social Media   236 4044. 6202.   2200   213  57000
+    ## 6 Saturday  Social Media   119 3295. 4397.   2200   217  34500
+    ## 7 Sunday    Social Media    93 4334. 6188.   2500   506  53100
 
 The boxplot shows the distribution of the number of shares by the day of
 the week. It can be a good way to see if we have any outliers with
-**way** more shares than a typical article.
+**way** more shares than a typical article in this channel.
 
-Then we wanted to look at these outliers–the top articles by shares, so
-we grabbed a list of those URLs, along with the number of shares.
+We wanted to look at these outliers–the socmed channel’s top articles by
+shares, so we grabbed a list of those URLs, along with the number of
+shares.
 
 ``` r
 head(training[order(training$shares, decreasing = TRUE), c("url", "shares")], 10)
 ```
 
     ## # A tibble: 10 × 2
-    ##    url                                                                        shares
-    ##    <chr>                                                                       <dbl>
-    ##  1 http://mashable.com/2013/11/26/sprout-battery/                             122800
-    ##  2 http://mashable.com/2013/06/12/facebook-hashtag-advertising/                59000
-    ##  3 http://mashable.com/2013/02/25/reddit-facts-2-25/                           57600
-    ##  4 http://mashable.com/2013/11/29/marketing-wins-fails-2013/                   57000
-    ##  5 http://mashable.com/2013/11/03/youtube-music-awards-watch-video-live-stre…  53100
-    ##  6 http://mashable.com/2013/01/16/reddit-most-beautiful-songs/                 51900
-    ##  7 http://mashable.com/2014/08/11/isee-3-buzzes-moon/                          47700
-    ##  8 http://mashable.com/2013/08/09/12-doctor-who-episodes/                      47400
-    ##  9 http://mashable.com/2014/02/24/gravity-brandspeak/                          41900
-    ## 10 http://mashable.com/2014/06/04/jonah-hill-homophobic-slur-apology/          37500
+    ##    url                                                                   shares
+    ##    <chr>                                                                  <dbl>
+    ##  1 http://mashable.com/2013/11/26/sprout-battery/                        122800
+    ##  2 http://mashable.com/2013/06/12/facebook-hashtag-advertising/           59000
+    ##  3 http://mashable.com/2013/02/25/reddit-facts-2-25/                      57600
+    ##  4 http://mashable.com/2013/11/29/marketing-wins-fails-2013/              57000
+    ##  5 http://mashable.com/2013/11/03/youtube-music-awards-watch-video-live…  53100
+    ##  6 http://mashable.com/2013/01/16/reddit-most-beautiful-songs/            51900
+    ##  7 http://mashable.com/2014/08/11/isee-3-buzzes-moon/                     47700
+    ##  8 http://mashable.com/2013/08/09/12-doctor-who-episodes/                 47400
+    ##  9 http://mashable.com/2014/02/24/gravity-brandspeak/                     41900
+    ## 10 http://mashable.com/2014/06/04/jonah-hill-homophobic-slur-apology/     37500
 
 You can check out the article’s date and title within the URL and see
 what some of the most-shared articles were in the socmed channel during
@@ -347,6 +404,32 @@ ggplot(training, aes(x = title_sentiment_polarity,
 ```
 
 ![](./socmed_images/Scatter%20Plot%20title%20impact%20on%20shares-1.png)<!-- -->
+A table of the above chart:
+
+``` r
+training %>% group_by(title_sentiment_polarity) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
+
+    ## # A tibble: 147 × 7
+    ##    title_sentiment_polarity     n    Avg     Sd Median   Min   Max
+    ##                       <dbl> <int>  <dbl>  <dbl>  <dbl> <dbl> <dbl>
+    ##  1                   -1         3  2920.  1922.   3000   959  4800
+    ##  2                   -0.875     1  1400     NA    1400  1400  1400
+    ##  3                   -0.8       4  6000   4823.   5200  1200 12400
+    ##  4                   -0.714     1   165     NA     165   165   165
+    ##  5                   -0.7       4 15725  13453.  12950  2500 34500
+    ##  6                   -0.6       4  3300   3604.   1600  1300  8700
+    ##  7                   -0.55      1  1800     NA    1800  1800  1800
+    ##  8                   -0.5      21  6131.  9279.   3200   558 41900
+    ##  9                   -0.469     1  1500     NA    1500  1500  1500
+    ## 10                   -0.4      11  2191.  1944.   1700   998  7700
+    ## # … with 137 more rows
 
 In this plot of the impact of the title’s sentiment polarity on shares,
 an upward trend in the plotted points would indicate that articles with
@@ -371,6 +454,32 @@ ggplot(training, aes(x = n_tokens_content,
 ```
 
 ![](./socmed_images/Scatter%20plot%20of%20Article%20content%20length%20and%20images-1.png)<!-- -->
+A table of the above chart:
+
+``` r
+training %>% group_by(n_tokens_content) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
+
+    ## # A tibble: 897 × 7
+    ##    n_tokens_content     n   Avg    Sd Median   Min   Max
+    ##               <dbl> <int> <dbl> <dbl>  <dbl> <dbl> <dbl>
+    ##  1                0    10 3434. 3720.   2400   558 13000
+    ##  2               31     1 1100    NA    1100  1100  1100
+    ##  3               34     1 1100    NA    1100  1100  1100
+    ##  4               35     1  989    NA     989   989   989
+    ##  5               39     1 1100    NA    1100  1100  1100
+    ##  6               40     1 1200    NA    1200  1200  1200
+    ##  7               42     1  901    NA     901   901   901
+    ##  8               44     1 1100    NA    1100  1100  1100
+    ##  9               45     2 1200     0    1200  1200  1200
+    ## 10               47     4 1190.  198.   1200   959  1400
+    ## # … with 887 more rows
 
 In this plot, a downward trend in plotted points would indicate that
 shorter articles generally get more shares, while an upward trend would
@@ -393,6 +502,31 @@ ggplot(training, aes(x = num_keywords,
 ```
 
 ![](./socmed_images/Histogram%20of%20Keywords%20vs%20shares-1.png)<!-- -->
+A table of the above chart:
+
+``` r
+training %>% group_by(num_keywords) %>%
+  summarise(n=n(),
+            Avg=mean(shares),
+            Sd=sd(shares),
+            Median=median(shares),
+            Min=min(shares),
+            Max=max(shares))
+```
+
+    ## # A tibble: 10 × 7
+    ##    num_keywords     n   Avg    Sd Median   Min    Max
+    ##           <dbl> <int> <dbl> <dbl>  <dbl> <dbl>  <dbl>
+    ##  1            1    42 1798. 2280.   1100     8  12000
+    ##  2            2    13 1366.  846.   1300    53   3100
+    ##  3            3    78 3323. 3906.   1900     5  21100
+    ##  4            4   174 3122. 4856.   1900   255  47400
+    ##  5            5   226 3876. 6050.   2300   238  57000
+    ##  6            6   261 4224. 6416.   2300   217  59000
+    ##  7            7   286 3721. 8063.   2100   165 122800
+    ##  8            8   219 4139. 6514.   2200   595  53100
+    ##  9            9   134 3212. 2593.   2200   457  15200
+    ## 10           10   195 3496. 3847.   2300   448  25300
 
 The plot depicts circles sized by the number of articles falling into
 that category of number of keywords and number of shares. So you can how
@@ -416,6 +550,9 @@ Looking across the bottom row of graphs, we can see whether any
 relationships between `shares` and another variable are evident.
 
 ## Modeling
+
+Now we were ready to create some predictive models using the training
+data.
 
 ### Linear Regression
 
@@ -468,18 +605,24 @@ fullFit$finalModel
     ## lm(formula = .outcome ~ ., data = dat)
     ## 
     ## Coefficients:
-    ##               (Intercept)           n_tokens_content                  num_hrefs  
-    ##                   3658.87                     678.95                    -411.22  
-    ##            num_self_hrefs       average_token_length               num_keywords  
-    ##                   -354.48                      32.33                     233.06  
-    ##                kw_min_max                 kw_max_max                 kw_avg_max  
-    ##                   -273.51                    -385.77                     -71.78  
-    ##                kw_max_avg                 kw_avg_avg  self_reference_min_shares  
-    ##                  -1136.98                    1665.49                     329.30  
-    ##        weekday_is_monday1        weekday_is_tuesday1      weekday_is_wednesday1  
-    ##                    173.77                     -77.05                      31.88  
-    ##      weekday_is_thursday1         weekday_is_friday1        global_subjectivity  
-    ##                   -257.71                     145.11                    -145.57  
+    ##               (Intercept)           n_tokens_content  
+    ##                   3658.87                     678.95  
+    ##                 num_hrefs             num_self_hrefs  
+    ##                   -411.22                    -354.48  
+    ##      average_token_length               num_keywords  
+    ##                     32.33                     233.06  
+    ##                kw_min_max                 kw_max_max  
+    ##                   -273.51                    -385.77  
+    ##                kw_avg_max                 kw_max_avg  
+    ##                    -71.78                   -1136.98  
+    ##                kw_avg_avg  self_reference_min_shares  
+    ##                   1665.49                     329.30  
+    ##        weekday_is_monday1        weekday_is_tuesday1  
+    ##                    173.77                     -77.05  
+    ##     weekday_is_wednesday1       weekday_is_thursday1  
+    ##                     31.88                    -257.71  
+    ##        weekday_is_friday1        global_subjectivity  
+    ##                    145.11                    -145.57  
     ##  title_sentiment_polarity  
     ##                    130.96
 
@@ -525,14 +668,18 @@ smallFit$finalModel
     ## lm(formula = .outcome ~ ., data = dat)
     ## 
     ## Coefficients:
-    ##               (Intercept)           n_tokens_content                  num_hrefs  
-    ##                   3658.87                     657.53                    -415.03  
-    ##            num_self_hrefs       average_token_length               num_keywords  
-    ##                   -361.20                      23.97                     244.78  
-    ##                kw_min_max                 kw_max_max                 kw_avg_max  
-    ##                   -284.17                    -413.09                     -37.84  
-    ##                kw_max_avg                 kw_avg_avg  self_reference_min_shares  
-    ##                  -1089.11                    1621.50                     335.40  
+    ##               (Intercept)           n_tokens_content  
+    ##                   3658.87                     657.53  
+    ##                 num_hrefs             num_self_hrefs  
+    ##                   -415.03                    -361.20  
+    ##      average_token_length               num_keywords  
+    ##                     23.97                     244.78  
+    ##                kw_min_max                 kw_max_max  
+    ##                   -284.17                    -413.09  
+    ##                kw_avg_max                 kw_max_avg  
+    ##                    -37.84                   -1089.11  
+    ##                kw_avg_avg  self_reference_min_shares  
+    ##                   1621.50                     335.40  
     ##       global_subjectivity   title_sentiment_polarity  
     ##                   -149.65                     153.68
 
@@ -598,6 +745,11 @@ rfFit
     ## The final value used for the model was mtry = 2.
 
 ### Boosted Tree
+
+Boosted tree models is another tree-based method of prediction.
+Although, unlike random forest models, boosted tree models grow
+sequentially with each subsequent grown on a modified version of the
+original data and the predictions updated as trees grow.
 
 ``` r
 # Load required packages
@@ -765,10 +917,10 @@ winner
     ## Random Forest 
     ##    0.05046077
 
-We have a winning model based on the highest R-Squared value of
-0.0504608! Our models are not doing that great, and only explain a small
-percentage of the variation in number of shares, but let’s not let that
-dampen our enthusiasm!
+Above is our winning model for the socmed channel based on it having the
+highest R-Squared value of 0.0504608! Our models are not doing that
+great, and only explain a small percentage of the variation in number of
+shares, but let’s not let that dampen our enthusiasm!
 
 If we wanted to improve upon these models, we could increase the tuning
 value of `mtry` in the Random Forest model. The cost would be the model
@@ -784,8 +936,8 @@ We generated these reports automatically for each channel (“lifestyle”,
 “entertainment”, “bus”, “socmed”, “tech”, and “world”) by creating a
 function that uses the `rmarkdown` package to render a Github document
 with a `params` option, and then using a for loop to execute that
-function for each channel in a list. That’s how the page you’re reading
-was generated!
+function for each channel in a list. That’s how the socmed channel page
+you’re reading was generated!
 
 The code we used to automate the rendering is visible at the main page
 for this project [here](https://cdonahu.github.io/st558-project2/).
